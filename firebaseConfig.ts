@@ -28,14 +28,12 @@ export const isConfigValid = !!(firebaseConfig.apiKey && firebaseConfig.projectI
 
 let dbInstance: any = null;
 
-if (isConfigValid) {
-  try {
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    dbInstance = getFirestore(app);
-    console.log("Firebase Connection Ready");
-  } catch (error) {
-    console.error("Firebase startup error:", error);
-  }
+try {
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  dbInstance = getFirestore(app);
+  console.log("Firebase initialized");
+} catch (error) {
+  console.error("Firebase initialization failed:", error);
 }
 
 export { 

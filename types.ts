@@ -44,6 +44,12 @@ export interface TextElementStyle {
   visible: boolean;
   text?: string;
   width?: number;
+  // New Effects
+  strokeWidth?: number;
+  strokeColor?: string;
+  shadowBlur?: number;
+  shadowColor?: string;
+  is3D?: boolean;
 }
 
 export interface AwardTemplate {
@@ -68,7 +74,7 @@ export interface Recipient {
 }
 
 export const DEFAULT_ELEMENTS: TextElementStyle[] = [
-  { id: 'recipient', label: 'ชื่อ-นามสกุล', x: 500, y: 300, fontSize: 48, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: true, width: 800 },
+  { id: 'recipient', label: 'ชื่อ-นามสกุล', x: 500, y: 300, fontSize: 48, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: true, width: 800, strokeWidth: 0, strokeColor: '#ffffff', shadowBlur: 0, shadowColor: '#000000' },
   { id: 'role', label: 'ตำแหน่ง/สถานะ', x: 500, y: 360, fontSize: 24, fontFamily: 'Sarabun', color: '#1f2937', align: 'center', visible: false, width: 600 },
   { id: 'description', label: 'รายละเอียดรางวัล', x: 500, y: 410, fontSize: 28, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: true, width: 700 },
   { id: 'project', label: 'ชื่อโครงการ', x: 500, y: 480, fontSize: 28, fontFamily: 'Sarabun', color: '#1f2937', align: 'center', visible: true, width: 800 },
@@ -77,5 +83,4 @@ export const DEFAULT_ELEMENTS: TextElementStyle[] = [
   { id: 'school', label: 'ชื่อโรงเรียน/หน่วยงาน', x: 500, y: 150, fontSize: 32, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: false, text: 'กลุ่มโรงเรียนเมืองนางรอง' },
   { id: 'signatory_1', label: 'ชื่อผู้ลงนาม 1', x: 250, y: 620, fontSize: 20, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: false, text: '(นายสมชาย ใจดี)' },
   { id: 'signatory_pos_1', label: 'ตำแหน่งผู้ลงนาม 1', x: 250, y: 650, fontSize: 16, fontFamily: 'Sarabun', color: '#1f2937', align: 'center', visible: false, text: 'ประธานกลุ่มโรงเรียน' },
-  { id: 'custom_1', label: 'ข้อความอิสระ 1', x: 500, y: 200, fontSize: 24, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: false, text: 'ข้อความเพิ่มเติม' },
 ];

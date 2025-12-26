@@ -39,7 +39,7 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
       case 'role':
         return recipient?.role || '{ตำแหน่ง}';
       case 'description':
-        return recipient?.customDescription || template.defaultDescription || '{รายละเอียดรางวัล}';
+        return recipient?.customDescription || template.defaultDescription || '';
       case 'project':
         return template.projectName || '{ชื่อโครงการ}';
       case 'date':
@@ -74,6 +74,15 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
         if (el.align === 'center') transform = 'translateX(-50%)';
         else if (el.align === 'right') transform = 'translateX(-100%)';
 
+        // Effect Styling
+        const textShadows = [];
+        if (el.shadowBlur && el.shadowBlur > 0) {
+          textShadows.push(`${el.shadowBlur}px ${el.shadowBlur}px ${el.shadowBlur * 2}px ${el.shadowColor || 'rgba(0,0,0,0.5)'}`);
+        }
+        if (el.is3D) {
+          textShadows.push(`1px 1px 0px #ccc`, `2px 2px 0px #aaa`, `3px 3px 1px rgba(0,0,0,0.3)`);
+        }
+
         const style: React.CSSProperties = {
           position: 'absolute',
           left: `${el.x}px`,
@@ -88,6 +97,9 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
           lineHeight: 1.3,
           zIndex: 10,
           pointerEvents: 'none',
+          textShadow: textShadows.join(', ') || 'none',
+          WebkitTextStroke: el.strokeWidth ? `${el.strokeWidth}px ${el.strokeColor || '#fff'}` : 'none',
+          fontWeight: 'bold'
         };
 
         return (

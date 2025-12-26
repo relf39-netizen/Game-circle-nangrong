@@ -17,7 +17,7 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
     issueDate: new Date().toISOString().split('T')[0],
     backgroundImage: '',
     elements: JSON.parse(JSON.stringify(DEFAULT_ELEMENTS)),
-    defaultDescription: 'ขอแสดงความชื่นชมในความมุ่งมั่นและผลงานอันเป็นที่ประจักษ์',
+    defaultDescription: '',
     prefix: `MNR-${new Date().getFullYear()}`,
   });
 
@@ -71,7 +71,7 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
       <div className="bg-white border-b px-8 py-6 flex justify-between items-center no-print">
         <div>
           <h2 className="text-xl font-black text-gray-900">ตัวออกแบบเกียรติบัตร</h2>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Template Designer</p>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Template Designer & Effects</p>
         </div>
         <div className="space-x-3">
           <button onClick={onCancel} className="px-6 py-2.5 text-gray-500 font-bold text-sm hover:bg-gray-50 rounded-xl transition-all">ยกเลิก</button>
@@ -148,17 +148,38 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
           </section>
 
           {selectedElement && (
-             <div className="border-t pt-6 space-y-5">
-                 <h4 className="text-sm font-black text-gray-900 uppercase tracking-wider">{selectedElement.label}</h4>
+             <div className="border-t pt-6 space-y-5 animate-in slide-in-from-bottom-5">
+                 <h4 className="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center">
+                    <i className="fas fa-magic mr-2 text-blue-500"></i> ตกแต่ง: {selectedElement.label}
+                 </h4>
+                 
                  <div className="grid grid-cols-2 gap-4">
                      <div>
-                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">ฟอนต์</label>
+                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">ขนาดอักษร</label>
                          <input type="number" value={selectedElement.fontSize} onChange={e => updateElementStyle(selectedElement.id, { fontSize: parseInt(e.target.value) || 12 })} className="w-full border-2 border-gray-50 p-2 rounded-xl text-xs outline-none focus:border-blue-500" />
                      </div>
                      <div>
-                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">สี</label>
+                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">สีข้อความ</label>
                          <input type="color" value={selectedElement.color} onChange={e => updateElementStyle(selectedElement.id, { color: e.target.value })} className="w-full h-8 border-none bg-transparent cursor-pointer" />
                      </div>
+                 </div>
+
+                 <div className="space-y-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest">เอฟเฟกต์พิเศษ</p>
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-black text-gray-500 uppercase">ขอบเส้น (Stroke)</label>
+                            <input type="number" step="0.5" min="0" max="5" value={selectedElement.strokeWidth || 0} onChange={e => updateElementStyle(selectedElement.id, { strokeWidth: parseFloat(e.target.value) })} className="w-16 border p-1 rounded-md text-[10px]" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-black text-gray-500 uppercase">สีขอบ</label>
+                            <input type="color" value={selectedElement.strokeColor || '#ffffff'} onChange={e => updateElementStyle(selectedElement.id, { strokeColor: e.target.value })} className="w-16 h-6 border-none cursor-pointer" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <label className="text-[9px] font-black text-gray-500 uppercase">เงานูน (3D Effect)</label>
+                            <input type="checkbox" checked={selectedElement.is3D || false} onChange={e => updateElementStyle(selectedElement.id, { is3D: e.target.checked })} />
+                        </div>
+                    </div>
                  </div>
              </div>
           )}
@@ -191,7 +212,15 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
                             <span className="text-[8px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-full absolute -top-3 left-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {el.label}
                             </span>
-                            <div style={{ fontSize: `${el.fontSize}px`, opacity: 0.1 }}>[TEXT]</div>
+                            <div style={{ 
+                                fontSize: `${el.fontSize}px`, 
+                                opacity: 0.2, 
+                                fontWeight: 'bold',
+                                color: el.color,
+                                WebkitTextStroke: el.strokeWidth ? `${el.strokeWidth}px ${el.strokeColor}` : 'none'
+                            }}>
+                                [TEXT]
+                            </div>
                         </div>
                     ))}
                 </div>
