@@ -1,0 +1,6 @@
+
+{
+  "name": "Nang Rong Certificate System (Cloud)",
+  "description": "ระบบเกียรติบัตรออนไลน์กลุ่มโรงเรียนเมืองนางรอง รองรับ Firebase + Vercel + Gemini AI",
+  "requestFramePermissions": []
+}
