@@ -21,9 +21,6 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
     width: '1000px',
     height: '707px',
     position: 'relative',
-    backgroundImage: `url(${template.backgroundImage || 'https://via.placeholder.com/1000x707?text=MNR+Certificate'})`,
-    backgroundSize: '100% 100%',
-    backgroundPosition: 'center',
     transform: `scale(${scale})`,
     transformOrigin: 'top left',
     overflow: 'hidden',
@@ -58,8 +55,23 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
 
   return (
     <div className={`certificate-container ${className}`} style={containerStyle}>
+      {/* 1. Background Image */}
+      <img 
+        src={template.backgroundImage || 'https://via.placeholder.com/1000x707?text=MNR+Certificate'} 
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'fill',
+          pointerEvents: 'none'
+        }}
+        alt="Background"
+      />
+
+      {/* 2. Grid for Designer */}
       {showGrid && (
-        <div className="absolute inset-0 pointer-events-none opacity-10" 
+        <div className="absolute inset-0 pointer-events-none opacity-10 z-10" 
              style={{ 
                backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
                backgroundSize: '50px 50px'
@@ -67,39 +79,46 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
         </div>
       )}
 
+      {/* 3. Logo/Seal Image */}
+      {template.logoImage && template.logoConfig?.visible && (
+        <img 
+          src={template.logoImage} 
+          style={{
+            position: 'absolute',
+            left: `${template.logoConfig.x}px`,
+            top: `${template.logoConfig.y}px`,
+            transform: 'translate(-50%, -50%)',
+            height: `${120 * (template.logoConfig.scale || 1)}px`,
+            width: 'auto',
+            objectFit: 'contain',
+            zIndex: 15,
+            pointerEvents: 'none'
+          }}
+          alt="School Seal"
+        />
+      )}
+
+      {/* 4. Text Elements */}
       {template.elements.filter(el => el.visible).map((el) => {
         const content = getElementContent(el);
-        let transform = 'none';
-
-        if (el.align === 'center') transform = 'translateX(-50%)';
-        else if (el.align === 'right') transform = 'translateX(-100%)';
-
-        // Effect Styling
-        const textShadows = [];
-        if (el.shadowBlur && el.shadowBlur > 0) {
-          textShadows.push(`${el.shadowBlur}px ${el.shadowBlur}px ${el.shadowBlur * 2}px ${el.shadowColor || 'rgba(0,0,0,0.5)'}`);
-        }
-        if (el.is3D) {
-          textShadows.push(`1px 1px 0px #ccc`, `2px 2px 0px #aaa`, `3px 3px 1px rgba(0,0,0,0.3)`);
-        }
-
+        
         const style: React.CSSProperties = {
           position: 'absolute',
           left: `${el.x}px`,
           top: `${el.y}px`,
           fontSize: `${el.fontSize}px`,
           color: el.color,
-          fontFamily: "'Sarabun', sans-serif",
+          fontFamily: `'${el.fontFamily}', 'Sarabun', sans-serif`,
           textAlign: el.align,
-          transform: transform,
           width: el.width ? `${el.width}px` : 'auto',
+          transform: el.align === 'center' ? 'translateX(-50%)' : el.align === 'right' ? 'translateX(-100%)' : 'none',
           whiteSpace: 'pre-wrap',
           lineHeight: 1.3,
-          zIndex: 10,
+          zIndex: 20,
           pointerEvents: 'none',
-          textShadow: textShadows.join(', ') || 'none',
+          fontWeight: 'bold',
+          textShadow: el.is3D ? '1px 1px 0px #ccc, 2px 2px 0px #aaa, 3px 3px 1px rgba(0,0,0,0.3)' : 'none',
           WebkitTextStroke: el.strokeWidth ? `${el.strokeWidth}px ${el.strokeColor || '#fff'}` : 'none',
-          fontWeight: 'bold'
         };
 
         return (

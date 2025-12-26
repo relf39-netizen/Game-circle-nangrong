@@ -11,6 +11,15 @@ export const ROLE_SUGGESTIONS = [
   'ผู้เข้ารับการอบรม'
 ];
 
+export const FONT_OPTIONS = [
+  { id: 'Sarabun', name: 'สารบรรณ (ทางการ)' },
+  { id: 'Krub', name: 'ครับ (ทันสมัย)' },
+  { id: 'Maitree', name: 'ไมตรี (มีหัว/ทางการ)' },
+  { id: 'Chakra Petch', name: 'อักขระเพชร (กีฬา/เทคโนโลยี)' },
+  { id: 'Charm', name: 'ชาม (คัดลายมือ)' },
+  { id: 'Itim', name: 'ไอติม (น่ารัก/เด็ก)' }
+];
+
 export const INITIAL_AWARD_PRESETS = [
   'รางวัลชนะเลิศ ลำดับที่ ๑',
   'รางวัลรองชนะเลิศอันดับ ๑',
@@ -44,12 +53,19 @@ export interface TextElementStyle {
   visible: boolean;
   text?: string;
   width?: number;
-  // New Effects
+  // Effects
   strokeWidth?: number;
   strokeColor?: string;
   shadowBlur?: number;
   shadowColor?: string;
   is3D?: boolean;
+}
+
+export interface LogoConfig {
+  x: number;
+  y: number;
+  scale: number;
+  visible: boolean;
 }
 
 export interface AwardTemplate {
@@ -58,9 +74,12 @@ export interface AwardTemplate {
   projectName: string;
   issueDate: string;
   backgroundImage: string;
+  logoImage?: string; // รูปโลโก้/ตราประทับ
+  logoConfig?: LogoConfig; // การตั้งค่าโลโก้
   elements: TextElementStyle[];
   defaultDescription: string;
   prefix: string;
+  startNumber?: number;
   created_at?: string;
 }
 
@@ -74,7 +93,7 @@ export interface Recipient {
 }
 
 export const DEFAULT_ELEMENTS: TextElementStyle[] = [
-  { id: 'recipient', label: 'ชื่อ-นามสกุล', x: 500, y: 300, fontSize: 48, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: true, width: 800, strokeWidth: 0, strokeColor: '#ffffff', shadowBlur: 0, shadowColor: '#000000' },
+  { id: 'recipient', label: 'ชื่อ-นามสกุล', x: 500, y: 300, fontSize: 48, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: true, width: 800 },
   { id: 'role', label: 'ตำแหน่ง/สถานะ', x: 500, y: 360, fontSize: 24, fontFamily: 'Sarabun', color: '#1f2937', align: 'center', visible: false, width: 600 },
   { id: 'description', label: 'รายละเอียดรางวัล', x: 500, y: 410, fontSize: 28, fontFamily: 'Sarabun', color: '#000000', align: 'center', visible: true, width: 700 },
   { id: 'project', label: 'ชื่อโครงการ', x: 500, y: 480, fontSize: 28, fontFamily: 'Sarabun', color: '#1f2937', align: 'center', visible: true, width: 800 },

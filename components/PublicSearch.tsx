@@ -52,15 +52,18 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ templates, recipient
               onClick={() => window.print()} 
               className="w-full md:w-fit bg-blue-700 text-white px-8 py-2.5 rounded-xl shadow-xl font-black text-xs active:scale-95 transition-all border-b-2 border-blue-950 uppercase tracking-widest"
             >
-                <i className="fas fa-download mr-2"></i> Print / Download
+                <i className="fas fa-print mr-2"></i> พิมพ์ / ดาวน์โหลด
             </button>
         </div>
-        <div className="certificate-print-area shadow-2xl border-[12px] border-white rounded-xl bg-white overflow-hidden scale-[0.6] md:scale-0.9 lg:scale-100 origin-top shadow-slate-300">
+        
+        {/* คอนเทนเนอร์สำหรับการพิมพ์ (สอดคล้องกับ CSS @media print ใน index.html) */}
+        <div className="certificate-print-area relative bg-white shadow-2xl rounded-xl overflow-hidden border-[12px] border-white scale-[0.6] md:scale-[0.9] lg:scale-100 origin-top print:scale-100 print:m-0 print:p-0 print:border-none print:shadow-none">
              <CertificateRenderer template={selectedResult.template} recipient={selectedResult.recipient} />
         </div>
+        
         <div className="no-print text-center bg-slate-950 text-white px-8 py-3.5 rounded-full border-b-2 border-slate-900 shadow-xl">
           <p className="font-black text-[10px] uppercase tracking-[0.2em] flex items-center">
-            <i className="fas fa-info-circle text-amber-500 mr-2"></i> ตั้งค่าการพิมพ์: แนวนอน (Landscape) และขอบ (None)
+            <i className="fas fa-info-circle text-amber-500 mr-2"></i> แนะนำ: ตั้งค่าเครื่องพิมพ์เป็น "แนวนอน" และ "ขอบกระดาษ: ไม่มี"
           </p>
         </div>
       </div>
@@ -84,14 +87,14 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ templates, recipient
                 </div>
             </div>
             <div className="relative group w-full md:w-[300px]">
+                <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-700 transition-colors text-sm"></i>
                 <input 
                     type="text"
-                    placeholder="พิมพ์ชื่อเพื่อค้นหา..."
-                    className="w-full pl-10 pr-5 py-3 border-2 border-slate-300 bg-slate-50 rounded-xl text-base font-black text-slate-950 focus:bg-white focus:border-blue-700 outline-none transition-all shadow-inner placeholder:text-slate-300"
+                    placeholder="ค้นหารายชื่อ..."
+                    className="w-full pl-10 pr-5 py-3 border-2 border-slate-200 bg-slate-50 rounded-xl text-base font-black text-slate-950 focus:bg-white focus:border-blue-700 outline-none transition-all shadow-inner placeholder:text-slate-300"
                     value={localQuery}
                     onChange={(e) => setLocalQuery(e.target.value)}
                 />
-                <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-700 transition-colors text-sm"></i>
             </div>
         </div>
         
@@ -105,7 +108,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ templates, recipient
                 >
                    <div className="overflow-hidden">
                       <span className="text-lg font-black text-slate-950 block truncate group-hover:text-blue-600 transition-colors tracking-tight">{r.name}</span>
-                      <span className="text-[9px] font-black text-indigo-800 mt-1.5 block uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-lg w-fit border border-indigo-100">ID: {r.runningNumber}</span>
+                      <span className="text-[9px] font-black text-indigo-800 mt-1.5 block uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-lg w-fit border border-indigo-100">เลขที่: {r.runningNumber}</span>
                    </div>
                    <div className="shrink-0 w-10 h-10 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center group-hover:bg-blue-700 group-hover:text-white transition-all shadow-sm active:scale-90">
                       <i className="fas fa-eye text-sm"></i>
@@ -124,33 +127,31 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ templates, recipient
   }
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-700 pb-16">
-      <div className="bg-white p-10 md:p-16 rounded-[3rem] shadow-2xl border-4 border-slate-200 text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-blue-700 to-indigo-800"></div>
-        
-        <div className="mb-8 inline-flex p-5 bg-slate-950 rounded-2xl text-white shadow-xl relative border-b-4 border-slate-900">
-           <i className="fas fa-shield-alt text-3xl text-blue-400"></i>
+    <div className="space-y-10 animate-in fade-in duration-700 pb-16">
+      {/* ส่วนหัวใหม่ที่กะทัดรัด (Compact Header) */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b-2 border-slate-200 pb-8">
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 bg-blue-700 text-white rounded-[1.25rem] flex items-center justify-center shadow-xl border-b-4 border-blue-900">
+            <i className="fas fa-layer-group text-2xl"></i>
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-slate-950 tracking-tight leading-none">รายการรับเกียรติบัตร</h2>
+            <p className="text-[11px] text-slate-500 font-black uppercase tracking-[0.15em] mt-2">MNR Certificate Catalog</p>
+          </div>
         </div>
-        
-        <h2 className="text-3xl md:text-4xl font-black text-slate-950 mb-6 tracking-tight leading-none">ระบบรับเกียรติบัตร</h2>
-        <p className="text-slate-800 text-base md:text-lg mb-10 max-w-2xl mx-auto font-bold leading-relaxed">
-          ป้อนชื่อโครงการที่คุณเข้าร่วม <br className="hidden md:block" />
-          เพื่อรับใบประกาศเกียรติบัตรฉบับดิจิทัล
-        </p>
-        
-        <div className="max-w-2xl mx-auto relative group">
-          <div className="absolute -inset-3 bg-blue-600 rounded-[2.5rem] opacity-5 blur-2xl group-focus-within:opacity-15 transition-opacity"></div>
-          <i className="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 text-xl group-focus-within:text-blue-700 transition-colors"></i>
+        <div className="relative group w-full md:w-[400px]">
+          <i className="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-700 transition-colors"></i>
           <input
             type="text"
-            className="w-full pl-16 pr-8 py-5 border-2 border-slate-200 bg-slate-50 rounded-[1.5rem] text-slate-950 text-xl font-black focus:border-blue-700 focus:bg-white outline-none transition-all shadow-xl relative placeholder:text-slate-300 placeholder:font-bold"
-            placeholder="ค้นหาโครงการที่นี่..."
+            className="w-full pl-12 pr-6 py-4 border-2 border-slate-100 bg-white rounded-[1.5rem] text-slate-950 text-sm font-black focus:border-blue-700 outline-none transition-all shadow-sm placeholder:text-slate-300 placeholder:font-bold"
+            placeholder="ค้นหาโครงการที่ท่านเข้าร่วม..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
       </div>
 
+      {/* ตารางแสดงรายการโครงการ */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredTemplates.map((template) => (
             <div 
@@ -163,27 +164,30 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ templates, recipient
                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent opacity-60"></div>
                  <div className="absolute bottom-5 left-6">
                     <span className="bg-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center border-b-2 border-slate-200">
-                      <i className="fas fa-users mr-2 text-blue-700"></i> {recipients[template.id]?.length || 0} ราย
+                      <i className="fas fa-users mr-2 text-blue-700"></i> {recipients[template.id]?.length || 0} รายชื่อ
                     </span>
                  </div>
               </div>
               <div className="p-8 flex-grow">
                  <h3 className="font-black text-xl text-slate-950 line-clamp-2 min-h-[3rem] leading-tight group-hover:text-blue-700 transition-colors tracking-tight">{template.name}</h3>
-                 <div className="h-1 w-12 bg-blue-700 mt-4 group-hover:w-full transition-all duration-500 rounded-full"></div>
-                 <p className="text-[10px] text-slate-700 mt-4 font-black uppercase tracking-widest leading-relaxed italic">"{template.projectName}"</p>
+                 <div className="h-1.5 w-12 bg-blue-700 mt-4 group-hover:w-full transition-all duration-700 rounded-full"></div>
+                 <p className="text-[10px] text-slate-600 mt-5 font-black uppercase tracking-widest leading-relaxed italic line-clamp-2">"{template.projectName}"</p>
               </div>
               <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                 <span className="text-[9px] font-black text-blue-900 uppercase tracking-widest">ตรวจสอบรายชื่อที่นี่</span>
-                 <div className="w-9 h-9 bg-white border border-slate-200 text-blue-700 rounded-lg flex items-center justify-center group-hover:bg-blue-700 group-hover:text-white transition-all shadow-md">
-                    <i className="fas fa-chevron-right text-xs"></i>
+                 <span className="text-[10px] font-black text-slate-400 group-hover:text-blue-700 uppercase tracking-widest transition-colors">ตรวจสอบรายชื่อ</span>
+                 <div className="w-10 h-10 bg-white border border-slate-200 text-slate-300 rounded-xl flex items-center justify-center group-hover:bg-blue-700 group-hover:text-white group-hover:border-blue-700 transition-all shadow-md active:scale-90">
+                    <i className="fas fa-arrow-right text-xs"></i>
                  </div>
               </div>
             </div>
           ))}
 
           {filteredTemplates.length === 0 && (
-            <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
-               <h3 className="text-base font-black text-slate-400 uppercase tracking-[0.2em]">ไม่พบข้อมูลที่คุณค้นหา</h3>
+            <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-inner">
+               <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <i className="fas fa-search text-3xl text-slate-200"></i>
+               </div>
+               <h3 className="text-lg font-black text-slate-400 uppercase tracking-[0.2em]">ไม่พบโครงการที่คุณค้นหา</h3>
             </div>
           )}
       </div>

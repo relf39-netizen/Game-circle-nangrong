@@ -38,9 +38,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       customDesc: '',
   });
   const [accountForm, setAccountForm] = useState({ username: '', password: '', confirmPassword: '' });
-  
-  // ย้าย useState ของรางวัลมาไว้ด้านบนสุดตามกฎของ React Hooks
-  const [newPresetText, setNewPresetText] = useState('');
+  const [newP, setNewP] = useState('');
 
   const startCreate = () => { setEditingTemplate(undefined); setView('CREATE_DESIGN'); };
   const startEdit = (template: AwardTemplate) => { setEditingTemplate(template); setView('CREATE_DESIGN'); };
@@ -50,16 +48,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setRecipientForm({ name: '', role: 'นักเรียน', customDesc: '' }); 
   };
 
-  const handleSaveDesign = (template: AwardTemplate) => { onSaveTemplate(template); setView('LIST'); };
+  const handleSaveDesign = (template: AwardTemplate) => { 
+    onSaveTemplate(template); 
+    setView('LIST'); 
+  };
 
   const handleAddRecipientLocal = (e: React.FormEvent) => {
       e.preventDefault();
       if (!selectedTemplateId || !recipientForm.name) return;
 
+      const currentTemplate = templates.find(t => t.id === selectedTemplateId);
+      if (!currentTemplate) return;
+
       const now = new Date();
       const thaiYear = now.getFullYear() + 543;
-      let maxSeq = 0;
       const yearSuffix = `/${thaiYear}`;
+      
+      // เลขที่เริ่มต้นจาก Template หรือ 1
+      const startFrom = currentTemplate.startNumber || 1;
+      let maxSeq = startFrom - 1; // ตั้งค่าเริ่มต้นให้รันต่อจาก startFrom
 
       const currentList = recipients[selectedTemplateId] || [];
       currentList.forEach(r => {
@@ -92,8 +99,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         await setDoc(doc(db, 'config', 'admin'), { username: accountForm.username, password: accountForm.password });
         alert('อัปเดตบัญชีสำเร็จ');
         setView('LIST');
-      } catch (err) { alert('อัปเดตไม่สำเร็จ'); }
+      } catch (err) { alert('อัปเดตไม่สำเร็จ: ' + (err as Error).message); }
     }
+  };
+
+  const exportSystemData = () => {
+    const backupData = {
+      exportDate: new Date().toISOString(),
+      schoolGroup: "Muang Nang Rong School Group",
+      templates,
+      recipients,
+      presets
+    };
+    
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `MNR_Backup_${new Date().toLocaleDateString('th-TH').replace(/\//g, '-')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (view === 'CREATE_DESIGN') {
@@ -129,12 +156,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <span className="w-7 h-7 bg-blue-700 text-white rounded-lg flex items-center justify-center mr-3 shadow-md">
                           <i className="fas fa-user-plus text-[10px]"></i>
                         </span>
-                        เพิ่มรายชื่อทีละหลายคน
+                        เพิ่มรายชื่อต่อเนื่อง
                       </h3>
                       <form onSubmit={handleAddRecipientLocal} className="space-y-5">
                           <div>
                               <label className="block text-[9px] font-black text-slate-950 uppercase mb-2">ชื่อ - นามสกุล</label>
-                              <input type="text" value={recipientForm.name} onChange={e => setRecipientForm({...recipientForm, name: e.target.value})} className="w-full border-2 border-slate-200 bg-slate-50 p-3.5 rounded-xl text-sm font-bold text-slate-950 focus:bg-white focus:border-blue-600 outline-none transition-all" placeholder="พิมพ์ชื่อแล้วกด Enter หรือปุ่มเพิ่ม..." required autoFocus />
+                              <input type="text" value={recipientForm.name} onChange={e => setRecipientForm({...recipientForm, name: e.target.value})} className="w-full border-2 border-slate-200 bg-slate-50 p-3.5 rounded-xl text-sm font-bold text-slate-950 focus:bg-white focus:border-blue-600 outline-none transition-all" placeholder="พิมพ์ชื่อแล้วกด Enter..." required autoFocus />
                           </div>
                           <div>
                               <label className="block text-[9px] font-black text-slate-950 uppercase mb-2">ตำแหน่ง</label>
@@ -155,7 +182,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               </div>
                           </div>
                           <button type="submit" className="w-full bg-blue-700 text-white py-3.5 rounded-xl hover:bg-blue-800 shadow-lg font-black text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all mt-1 border-b-4 border-blue-950 flex items-center justify-center">
-                              <i className="fas fa-plus-circle mr-2"></i> บันทึกและเพิ่มรายชื่อต่อไป
+                              <i className="fas fa-plus-circle mr-2"></i> บันทึกรายชื่อ
                           </button>
                       </form>
                     </div>
@@ -181,7 +208,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               </thead>
                               <tbody className="bg-white divide-y border-b border-slate-50">
                                   {currentRecipients.length === 0 ? (
-                                    <tr><td colSpan={4} className="px-6 py-16 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">ยังไม่มีรายชื่อในโครงการนี้</td></tr>
+                                    <tr><td colSpan={4} className="px-6 py-16 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">ยังไม่มีรายชื่อ</td></tr>
                                   ) : (
                                     currentRecipients.map((recipient) => (
                                       <tr key={recipient.id} className="hover:bg-slate-50/50 transition-all group">
@@ -236,7 +263,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 <div className="flex gap-4 pt-4">
                   <button type="button" onClick={() => setView('LIST')} className="flex-1 px-6 py-4 rounded-xl font-black text-[10px] text-slate-400 uppercase tracking-widest hover:bg-slate-50 transition-all">ยกเลิก</button>
-                  <button type="submit" className="flex-[2] bg-slate-950 text-white py-4 rounded-xl font-black text-[10px] hover:bg-blue-700 shadow-xl border-b-4 border-slate-900 uppercase tracking-widest transition-all">บันทึกลงฐานข้อมูล</button>
+                  <button type="submit" className="flex-[2] bg-slate-950 text-white py-4 rounded-xl font-black text-[10px] hover:bg-blue-700 shadow-xl border-b-4 border-slate-900 uppercase tracking-widest transition-all">บันทึก</button>
                 </div>
              </form>
           </div>
@@ -250,15 +277,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
            <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
               <div className="flex justify-between items-center mb-8">
                  <h3 className="text-xl font-black text-slate-950 uppercase tracking-tight">ตั้งค่ารายการรางวัล</h3>
-                 <button onClick={() => setView('LIST')} className="text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors">ปิดหน้าต่าง</button>
+                 <button onClick={() => setView('LIST')} className="text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors">ปิด</button>
               </div>
               <div className="flex gap-3 mb-8">
-                 <input type="text" className="flex-grow border-2 border-slate-200 p-4 rounded-xl text-sm font-bold outline-none focus:border-blue-700" value={newPresetText} onChange={e => setNewPresetText(e.target.value)} placeholder="พิมพ์ชื่อรางวัลใหม่ที่นี่..." />
-                 <button onClick={() => { if(newPresetText) { onSavePreset(newPresetText); setNewPresetText(''); } }} className="bg-blue-700 text-white px-8 rounded-xl font-black text-[10px] uppercase shadow-lg border-b-2 border-blue-900">เพิ่มรางวัล</button>
+                 <input type="text" className="flex-grow border-2 border-slate-200 p-4 rounded-xl text-sm font-bold outline-none focus:border-blue-700" value={newP} onChange={e => setNewP(e.target.value)} placeholder="พิมพ์ชื่อรางวัลใหม่..." />
+                 <button onClick={() => { if(newP) { onSavePreset(newP); setNewP(''); } }} className="bg-blue-700 text-white px-8 rounded-xl font-black text-[10px] uppercase shadow-lg border-b-2 border-blue-900">เพิ่ม</button>
               </div>
               <div className="space-y-2">
                  {presets.map(p => (
-                   <div key={p.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-blue-200 transition-all">
+                   <div key={p.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100">
                       <span className="text-sm font-bold text-slate-900">{p.text}</span>
                       <button onClick={() => onDeletePreset(p.id)} className="text-rose-300 hover:text-rose-700 transition-colors"><i className="fas fa-trash-alt text-xs"></i></button>
                    </div>
@@ -273,10 +300,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="space-y-8 animate-in fade-in duration-700 pb-16 no-print">
       <div className="flex flex-col md:flex-row justify-between items-end gap-5 bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
           <div className="text-center md:text-left">
-            <h2 className="text-xl font-black text-slate-950 tracking-tight leading-none">แผงควบคุมแอดมิน</h2>
+            <h2 className="text-xl font-black text-slate-950 tracking-tight leading-none">แผงควบคุม</h2>
             <p className="text-blue-800 mt-2 font-black uppercase tracking-widest text-[9px] italic">School Administrator Dashboard</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap justify-center md:justify-end gap-3">
+              <button onClick={exportSystemData} className="bg-white text-emerald-700 border-2 border-emerald-100 px-5 py-2.5 rounded-xl shadow-sm hover:bg-emerald-50 transition-all font-black text-[9px] flex items-center uppercase"><i className="fas fa-file-export mr-2"></i> สำรองข้อมูล (JSON)</button>
               <button onClick={() => setView('ACCOUNT_SETTINGS')} className="bg-white text-slate-900 px-5 py-2.5 rounded-xl shadow-md hover:bg-slate-50 transition-all font-black text-[9px] flex items-center border-b-2 border-slate-200 uppercase"><i className="fas fa-user-shield mr-2 text-slate-400"></i> ตั้งค่าบัญชี</button>
               <button onClick={() => setView('MANAGE_PRESETS')} className="bg-slate-950 text-white px-5 py-2.5 rounded-xl shadow-md hover:bg-slate-800 transition-all font-black text-[9px] flex items-center border-b-2 border-slate-900 uppercase"><i className="fas fa-tasks mr-2 text-blue-400"></i> ตั้งค่ารางวัล</button>
               <button onClick={startCreate} className="bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-lg hover:bg-blue-800 transition-all font-black text-[9px] flex items-center border-b-2 border-blue-900 uppercase"><i className="fas fa-plus-circle mr-2"></i> สร้างใหม่</button>
