@@ -62,7 +62,7 @@ export interface DocumentItem {
   title: string;
   type: DocumentType;
   date: string;
-  files: AttachedFile[]; // เปลี่ยนจาก url: string เป็น files: AttachedFile[]
+  files: AttachedFile[];
   description?: string;
   created_at?: string;
 }
@@ -79,7 +79,6 @@ export interface TextElementStyle {
   visible: boolean;
   text?: string;
   width?: number;
-  // Effects
   strokeWidth?: number;
   strokeColor?: string;
   shadowBlur?: number;
@@ -113,10 +112,11 @@ export interface Recipient {
   id: string;
   templateId: string;
   name: string;
-  type: string; // ประเภท: นักเรียน, ครู, ผู้บริหาร
-  school: string; // โรงเรียน
+  type: string;
+  school: string;
   runningNumber: string;
   customDescription?: string;
+  pdfUrl?: string; // เก็บลิงก์ไฟล์ที่อัปโหลดขึ้น Google Drive แล้ว
 }
 
 export const DEFAULT_ELEMENTS: TextElementStyle[] = [

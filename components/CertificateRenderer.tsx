@@ -104,6 +104,15 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
       {template.elements.filter(el => el.visible).map((el) => {
         const content = getElementContent(el);
         
+        // สร้างเงาหลายชั้น (3D + Shadow)
+        const shadowLayers = [];
+        if (el.is3D) {
+          shadowLayers.push('1px 1px 0px #ccc', '2px 2px 0px #bbb', '3px 3px 0px #aaa', '4px 4px 2px rgba(0,0,0,0.2)');
+        }
+        if (el.shadowBlur) {
+          shadowLayers.push(`0 0 ${el.shadowBlur}px ${el.shadowColor || 'rgba(0,0,0,0.5)'}`);
+        }
+
         const style: React.CSSProperties = {
           position: 'absolute',
           left: `${el.x}px`,
@@ -119,8 +128,10 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
           zIndex: 20,
           pointerEvents: 'none',
           fontWeight: 'bold',
-          textShadow: el.is3D ? '1px 1px 0px #ccc, 2px 2px 0px #aaa, 3px 3px 1px rgba(0,0,0,0.3)' : 'none',
+          textShadow: shadowLayers.length > 0 ? shadowLayers.join(', ') : 'none',
           WebkitTextStroke: el.strokeWidth ? `${el.strokeWidth}px ${el.strokeColor || '#fff'}` : 'none',
+          // @ts-ignore - paint-order ช่วยให้ Stroke ไม่ทับ Fill
+          paintOrder: 'stroke fill',
         };
 
         return (

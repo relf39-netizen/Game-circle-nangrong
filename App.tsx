@@ -18,7 +18,7 @@ import {
 } from './firebaseConfig.ts';
 
 const App: React.FC = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('mnr_admin_logged_in') === 'true');
   const [showLogin, setShowLogin] = useState(false);
   const [loginForm, setLoginForm] = useState({ user: '', pass: '' });
   const [templates, setTemplates] = useState<AwardTemplate[]>([]);
@@ -105,6 +105,11 @@ const App: React.FC = () => {
       if (adminDoc.exists()) {
         const data = adminDoc.data();
         if (data.username === loginForm.user && data.password === loginForm.pass) {
+          // ลบค่า View เดิมที่เคยจำไว้ใน LocalStorage เพื่อให้เริ่มที่หน้า LIST เสมอตอน Login ใหม่
+          localStorage.removeItem('mnr_admin_view');
+          localStorage.removeItem('mnr_admin_selected_id');
+          
+          sessionStorage.setItem('mnr_admin_logged_in', 'true');
           setIsAdmin(true);
           setShowLogin(false);
           setLoginForm({ user: '', pass: '' });
@@ -115,6 +120,13 @@ const App: React.FC = () => {
     } catch (err) {
       alert('เชื่อมต่อฐานข้อมูลล้มเหลว');
     }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('mnr_admin_logged_in');
+    localStorage.removeItem('mnr_admin_view');
+    localStorage.removeItem('mnr_admin_selected_id');
+    setIsAdmin(false);
   };
 
   const handleSaveTemplate = async (updatedTemplate: AwardTemplate) => {
@@ -142,6 +154,15 @@ const App: React.FC = () => {
       await addDoc(collection(db, 'recipients'), payload);
       await fetchData();
     } catch (err) { alert('เพิ่มรายชื่อไม่สำเร็จ'); }
+  };
+
+  const handleUpdateRecipient = async (updated: Recipient) => {
+    if (!db) return;
+    try {
+      const { id, ...payload } = updated;
+      await setDoc(doc(db, 'recipients', id), payload, { merge: true });
+      await fetchData();
+    } catch (err) { alert('อัปเดตรายชื่อไม่สำเร็จ'); }
   };
 
   const handleDeleteRecipient = async (recipientId: string, templateId: string) => {
@@ -187,7 +208,12 @@ const App: React.FC = () => {
 
   const handleDeleteDocument = async (id: string) => {
     if (!db) return;
-    try { await deleteDoc(doc(db, 'documents', id)); await fetchData(); } catch (err) {}
+    try {
+      if (confirm('ยืนยันการลบเอกสารนี้?')) {
+        await deleteDoc(doc(db, 'documents', id));
+        await fetchData();
+      }
+    } catch (err) { console.error(err); }
   };
 
   return (
@@ -209,7 +235,7 @@ const App: React.FC = () => {
               {dbStatus === 'CONNECTED' ? 'เชื่อมต่อสำเร็จ' : 'เชื่อมต่อล้มเหลว'}
             </span>
             {isAdmin ? (
-               <button onClick={() => setIsAdmin(false)} className="bg-rose-700 text-white px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all shadow-md border-b-2 border-rose-900 active:scale-95">
+               <button onClick={handleLogout} className="bg-rose-700 text-white px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all shadow-md border-b-2 border-rose-900 active:scale-95">
                 <i className="fas fa-sign-out-alt mr-2" /> ออกจากระบบ
               </button>
             ) : (
@@ -236,6 +262,7 @@ const App: React.FC = () => {
             documents={documents}
             onSaveTemplate={handleSaveTemplate}
             onAddRecipient={handleAddRecipient}
+            onUpdateRecipient={handleUpdateRecipient}
             onDeleteRecipient={handleDeleteRecipient}
             onSavePreset={handleSavePreset}
             onDeletePreset={handleDeletePreset}

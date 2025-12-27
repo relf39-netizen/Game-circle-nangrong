@@ -19,8 +19,8 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
     logoImage: '',
     logoConfig: { x: 500, y: 100, scale: 1, visible: false },
     elements: JSON.parse(JSON.stringify(DEFAULT_ELEMENTS)),
-    defaultDescription: '',
-    prefix: `MNR-${new Date().getFullYear()}`,
+    defaultDescription: 'ได้รับรางวัล',
+    prefix: 'มนร',
     startNumber: 1,
   });
 
@@ -78,7 +78,6 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
     if (file) {
       const reader = new FileReader();
       reader.onloadend = async () => {
-        // สำหรับโลโก้ เราใช้ PNG (ถ้าเป็นไปได้) เพื่อความโปร่งใส หรือ JPEG คุณภาพสูง
         const compressed = await compressImage(reader.result as string, 0.9, 800);
         setTemplate(prev => ({ 
           ...prev, 
@@ -151,7 +150,7 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
       <div className="bg-white border-b px-8 py-6 flex justify-between items-center no-print">
         <div>
           <h2 className="text-xl font-black text-gray-900">ตัวออกแบบเกียรติบัตร (Pro)</h2>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Custom Template & Branding</p>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Custom Template & Effects</p>
         </div>
         <div className="space-x-3">
           <button onClick={onCancel} className="px-6 py-2.5 text-gray-500 font-bold text-sm hover:bg-gray-50 rounded-xl transition-all">ยกเลิก</button>
@@ -171,11 +170,27 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
           <section className="space-y-4">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2">1. ข้อมูลพื้นฐาน</h3>
             <div className="space-y-3">
-              <input type="text" value={template.name} onChange={e => setTemplate({...template, name: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 rounded-xl p-3 text-sm font-bold focus:bg-white focus:border-blue-500 outline-none transition-all" placeholder="ชื่อกิจกรรม" />
-              <input type="text" value={template.projectName} onChange={e => setTemplate({...template, projectName: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-blue-500 outline-none transition-all" placeholder="ชื่อโครงการบนเกียรติบัตร" />
-              <div className="pt-2">
-                <label className="text-[9px] font-black text-blue-700 uppercase mb-1.5 block">เลขที่เริ่มต้น</label>
-                <input type="number" min="1" value={template.startNumber || 1} onChange={e => setTemplate({...template, startNumber: parseInt(e.target.value) || 1})} className="w-full border-2 border-blue-50 bg-blue-50 rounded-xl p-2.5 text-sm font-bold outline-none" />
+              <div>
+                <label className="text-[9px] font-black text-gray-400 uppercase mb-1 block">ชื่อกิจกรรม</label>
+                <input type="text" value={template.name} onChange={e => setTemplate({...template, name: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 rounded-xl p-3 text-sm font-bold focus:bg-white focus:border-blue-500 outline-none transition-all" placeholder="เช่น การแข่งขันศิลปหัตถกรรม..." />
+              </div>
+              <div>
+                <label className="text-[9px] font-black text-gray-400 uppercase mb-1 block">ชื่อโครงการ</label>
+                <input type="text" value={template.projectName} onChange={e => setTemplate({...template, projectName: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-blue-500 outline-none transition-all" placeholder="เช่น ภายใต้โครงการพัฒนาศักยภาพ..." />
+              </div>
+              <div>
+                <label className="text-[9px] font-black text-gray-400 uppercase mb-1 block">คำอธิบายรางวัลเริ่มต้น</label>
+                <input type="text" value={template.defaultDescription} onChange={e => setTemplate({...template, defaultDescription: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-blue-500 outline-none transition-all" placeholder="เช่น ได้รับรางวัล, ผ่านการอบรม..." />
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="text-[9px] font-black text-blue-700 uppercase mb-1.5 block">คำนำหน้าเลขที่</label>
+                  <input type="text" value={template.prefix} onChange={e => setTemplate({...template, prefix: e.target.value})} className="w-full border-2 border-blue-50 bg-blue-50 rounded-xl p-2.5 text-sm font-bold outline-none focus:border-blue-300" placeholder="เช่น มนร" />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-blue-700 uppercase mb-1.5 block">เลขที่เริ่มต้น</label>
+                  <input type="number" min="1" value={template.startNumber || 1} onChange={e => setTemplate({...template, startNumber: parseInt(e.target.value) || 1})} className="w-full border-2 border-blue-50 bg-blue-50 rounded-xl p-2.5 text-sm font-bold outline-none" />
+                </div>
               </div>
             </div>
           </section>
@@ -254,35 +269,71 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
           </section>
 
           {selectedElement && selectedElementId !== 'LOGO_ELEMENT' && (
-             <div className="border-t pt-6 space-y-5 animate-in slide-in-from-bottom-5 pb-8">
+             <div className="border-t pt-6 space-y-6 animate-in slide-in-from-bottom-5 pb-12">
                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center">
-                    <i className="fas fa-font mr-2 text-blue-500"></i> {selectedElement.label}
+                    <i className="fas fa-edit mr-2 text-blue-500"></i> ปรับแต่ง: {selectedElement.label}
                  </h4>
-                 <div className="space-y-4">
-                     <div>
-                         <label className="text-[9px] font-black text-gray-400 uppercase mb-1 block">ฟอนต์</label>
-                         <select value={selectedElement.fontFamily} onChange={e => updateElementStyle(selectedElement.id, { fontFamily: e.target.value })} className="w-full border-2 border-gray-100 bg-gray-50 p-2.5 rounded-xl text-xs font-bold focus:border-blue-500 outline-none transition-all">
+                 
+                 <div className="space-y-5">
+                     <div className="space-y-3">
+                         <label className="text-[9px] font-black text-gray-400 uppercase block">ฟอนต์และรูปแบบ</label>
+                         <select value={selectedElement.fontFamily} onChange={e => updateElementStyle(selectedElement.id, { fontFamily: e.target.value })} className="w-full border-2 border-gray-100 bg-gray-50 p-2.5 rounded-xl text-xs font-bold outline-none transition-all">
                             {FONT_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
                          </select>
-                     </div>
-                     <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="text-[9px] font-black text-gray-400 uppercase mb-1 block">ขนาด</label>
-                            <input type="number" value={selectedElement.fontSize} onChange={e => updateElementStyle(selectedElement.id, { fontSize: parseInt(e.target.value) || 12 })} className="w-full border-2 border-gray-100 p-2 rounded-xl text-xs" />
-                        </div>
-                        <div>
-                            <label className="text-[9px] font-black text-gray-400 uppercase mb-1 block">สี</label>
-                            <input type="color" value={selectedElement.color} onChange={e => updateElementStyle(selectedElement.id, { color: e.target.value })} className="w-full h-8 border-none bg-transparent cursor-pointer" />
-                        </div>
-                     </div>
-                     <div>
-                        <label className="text-[9px] font-black text-gray-400 uppercase mb-1 block">การจัดวาง</label>
-                        <div className="flex bg-gray-100 p-1 rounded-xl">
+                         <div className="flex bg-gray-100 p-1 rounded-xl">
                             {(['left', 'center', 'right'] as const).map(a => (
                                 <button key={a} onClick={() => updateElementStyle(selectedElement.id, { align: a })} className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${selectedElement.align === a ? 'bg-white shadow-sm text-blue-700' : 'text-gray-400'}`}>
                                     {a === 'left' ? 'ซ้าย' : a === 'center' ? 'กลาง' : 'ขวา'}
                                 </button>
                             ))}
+                         </div>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[9px] font-black text-gray-400 uppercase mb-1.5 block">ขนาดตัวอักษร</label>
+                            <input type="number" value={selectedElement.fontSize} onChange={e => updateElementStyle(selectedElement.id, { fontSize: parseInt(e.target.value) || 12 })} className="w-full border-2 border-gray-100 p-2.5 rounded-xl text-xs font-bold" />
+                        </div>
+                        <div>
+                            <label className="text-[9px] font-black text-gray-400 uppercase mb-1.5 block">สีตัวอักษร</label>
+                            <input type="color" value={selectedElement.color} onChange={e => updateElementStyle(selectedElement.id, { color: e.target.value })} className="w-full h-10 border-2 border-gray-100 p-1 rounded-xl cursor-pointer bg-white" />
+                        </div>
+                     </div>
+
+                     <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block border-b border-slate-200 pb-2">เส้นขอบตัวอักษร (Stroke)</label>
+                        <div className="grid grid-cols-2 gap-4">
+                           <div>
+                              <label className="text-[8px] font-bold text-slate-400 uppercase mb-1 block">ความหนา</label>
+                              <input type="number" min="0" max="20" step="0.5" value={selectedElement.strokeWidth || 0} onChange={e => updateElementStyle(selectedElement.id, { strokeWidth: parseFloat(e.target.value) || 0 })} className="w-full border border-slate-200 p-2 rounded-lg text-xs" />
+                           </div>
+                           <div>
+                              <label className="text-[8px] font-bold text-slate-400 uppercase mb-1 block">สีเส้นขอบ</label>
+                              <input type="color" value={selectedElement.strokeColor || '#ffffff'} onChange={e => updateElementStyle(selectedElement.id, { strokeColor: e.target.value })} className="w-full h-8 border border-slate-200 p-0.5 rounded-lg cursor-pointer bg-white" />
+                           </div>
+                        </div>
+                     </div>
+
+                     <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block border-b border-slate-200 pb-2">มิติและเงา (Shadow & 3D)</label>
+                        <div className="flex items-center justify-between mb-3">
+                           <label className="text-[9px] font-black text-slate-900 uppercase">เอฟเฟกต์ตัวอักษรนูน (3D)</label>
+                           <button 
+                             onClick={() => updateElementStyle(selectedElement.id, { is3D: !selectedElement.is3D })}
+                             className={`w-12 h-6 rounded-full transition-all relative ${selectedElement.is3D ? 'bg-blue-600' : 'bg-slate-300'}`}
+                           >
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${selectedElement.is3D ? 'left-7' : 'left-1'}`}></div>
+                           </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                           <div>
+                              <label className="text-[8px] font-bold text-slate-400 uppercase mb-1 block">ความฟุ้งของเงา</label>
+                              <input type="number" min="0" max="50" value={selectedElement.shadowBlur || 0} onChange={e => updateElementStyle(selectedElement.id, { shadowBlur: parseInt(e.target.value) || 0 })} className="w-full border border-slate-200 p-2 rounded-lg text-xs" />
+                           </div>
+                           <div>
+                              <label className="text-[8px] font-bold text-slate-400 uppercase mb-1 block">สีของเงา</label>
+                              <input type="color" value={selectedElement.shadowColor || '#000000'} onChange={e => updateElementStyle(selectedElement.id, { shadowColor: e.target.value })} className="w-full h-8 border border-slate-200 p-0.5 rounded-lg cursor-pointer bg-white" />
+                           </div>
                         </div>
                      </div>
                  </div>
@@ -299,7 +350,7 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
             >
                 <CertificateRenderer template={template} showGrid={true} className="pointer-events-none" />
                 <div className="absolute inset-0 z-20 overflow-hidden">
-                    {/* Render Draggable Logo Placeholder */}
+                    {/* Draggable Logo */}
                     {template.logoImage && template.logoConfig?.visible && (
                         <div 
                            onMouseDown={handleLogoMouseDown}
@@ -325,11 +376,10 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
                              }} 
                              alt="Logo Placeholder"
                            />
-                           <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] px-2 py-0.5 rounded-full font-black uppercase">ตราสัญลักษณ์</span>
                         </div>
                     )}
 
-                    {/* Render Draggable Text Placeholders */}
+                    {/* Draggable Text Elements */}
                     {visibleElements.map(el => (
                         <div
                             key={el.id}
