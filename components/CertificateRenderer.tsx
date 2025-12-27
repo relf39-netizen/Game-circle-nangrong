@@ -34,7 +34,9 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
       case 'recipient':
         return recipient?.name || '{ชื่อ-นามสกุล}';
       case 'role':
-        return recipient?.role || '{ตำแหน่ง}';
+        return recipient?.type || '{ประเภท/ตำแหน่ง}';
+      case 'school':
+        return recipient?.school || '{ชื่อโรงเรียน}';
       case 'description':
         return recipient?.customDescription || template.defaultDescription || '';
       case 'project':
