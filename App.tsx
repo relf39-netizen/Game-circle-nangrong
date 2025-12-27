@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { AwardTemplate, Recipient, AwardPreset, INITIAL_AWARD_PRESETS, SchoolItem } from './types.ts';
+import { AwardTemplate, Recipient, AwardPreset, INITIAL_AWARD_PRESETS, SchoolItem, DocumentItem } from './types.ts';
 import { AdminDashboard } from './components/AdminDashboard.tsx';
 import { PublicSearch } from './components/PublicSearch.tsx';
 import { 
@@ -25,6 +25,7 @@ const App: React.FC = () => {
   const [recipients, setRecipients] = useState<Record<string, Recipient[]>>({});
   const [presets, setPresets] = useState<AwardPreset[]>([]);
   const [schools, setSchools] = useState<SchoolItem[]>([]);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dbStatus, setDbStatus] = useState<'CONNECTING' | 'CONNECTED' | 'ERROR'>('CONNECTING');
 
@@ -73,6 +74,10 @@ const App: React.FC = () => {
       const schoolsSnapshot = await getDocs(query(schoolsCol, orderBy('name', 'asc')));
       const schoolsList = schoolsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SchoolItem));
 
+      const docsCol = collection(db, 'documents');
+      const docsSnapshot = await getDocs(query(docsCol, orderBy('date', 'desc')));
+      const docsList = docsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentItem));
+
       const adminDoc = await getDoc(doc(db, 'config', 'admin'));
       if (!adminDoc.exists()) {
         await setDoc(doc(db, 'config', 'admin'), { username: 'admin', password: '1234' });
@@ -82,6 +87,7 @@ const App: React.FC = () => {
       setRecipients(grouped);
       setPresets(presetsList);
       setSchools(schoolsList);
+      setDocuments(docsList);
       setDbStatus('CONNECTED');
     } catch (err) {
       console.error("Firebase Error:", err);
@@ -166,6 +172,24 @@ const App: React.FC = () => {
     try { await deleteDoc(doc(db, 'schools', id)); await fetchData(); } catch (err) {}
   };
 
+  const handleSaveDocument = async (docData: DocumentItem) => {
+    if (!db) return;
+    try {
+      const { id, ...payload } = docData;
+      if (id.startsWith('new-')) {
+        await addDoc(collection(db, 'documents'), { ...payload, created_at: new Date().toISOString() });
+      } else {
+        await setDoc(doc(db, 'documents', id), payload, { merge: true });
+      }
+      await fetchData();
+    } catch (err) { alert('บันทึกเอกสารไม่สำเร็จ'); }
+  };
+
+  const handleDeleteDocument = async (id: string) => {
+    if (!db) return;
+    try { await deleteDoc(doc(db, 'documents', id)); await fetchData(); } catch (err) {}
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <header className="bg-slate-950 text-white shadow-xl no-print border-b-4 border-blue-700">
@@ -209,6 +233,7 @@ const App: React.FC = () => {
             recipients={recipients}
             presets={presets}
             schools={schools}
+            documents={documents}
             onSaveTemplate={handleSaveTemplate}
             onAddRecipient={handleAddRecipient}
             onDeleteRecipient={handleDeleteRecipient}
@@ -216,10 +241,12 @@ const App: React.FC = () => {
             onDeletePreset={handleDeletePreset}
             onSaveSchool={handleSaveSchool}
             onDeleteSchool={handleDeleteSchool}
+            onSaveDocument={handleSaveDocument}
+            onDeleteDocument={handleDeleteDocument}
             isCloud={true}
           />
         ) : (
-          <PublicSearch templates={templates} recipients={recipients} schools={schools} />
+          <PublicSearch templates={templates} recipients={recipients} schools={schools} documents={documents} />
         )}
       </main>
 
@@ -253,7 +280,7 @@ const App: React.FC = () => {
       <footer className="bg-slate-950 text-white py-10 no-print border-t-4 border-slate-900">
         <div className="container mx-auto px-6 text-center">
           <p className="text-sm text-slate-500 font-black tracking-widest uppercase leading-relaxed">
-            ระบบเกียรติบัตรออนไลน์กลุ่มโรงเรียนเมืองนางรอง &copy; {new Date().getFullYear() + 543} <br/>
+            ระบบเกียรติบัตรและเอกสารออนไลน์กลุ่มโรงเรียนเมืองนางรอง &copy; {new Date().getFullYear() + 543} <br/>
             (Cloud System - Version Stable)
           </p>
         </div>

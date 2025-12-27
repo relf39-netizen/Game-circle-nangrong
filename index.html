@@ -9,6 +9,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- นำเข้าฟอนต์ภาษาไทยหลากหลายสไตล์ -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&family=Krub:wght@400;700&family=Maitree:wght@400;700&family=Chakra+Petch:wght@400;700&family=Charm:wght@400;700&family=Itim&display=swap" rel="stylesheet">
+    
+    <!-- Google API Client & Identity Services -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+
     <script>
       window.process = { env: {} };
       window.global = window;
@@ -101,6 +106,20 @@
           width: 100% !important;
           height: 100% !important;
         }
+      }
+
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
       }
     </style>
   </head>

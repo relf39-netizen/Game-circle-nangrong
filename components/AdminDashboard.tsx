@@ -1,14 +1,21 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { AwardTemplate, Recipient, TYPE_OPTIONS, AwardPreset, SchoolItem } from '../types.ts';
+import { AwardTemplate, Recipient, TYPE_OPTIONS, AwardPreset, SchoolItem, DocumentItem, DOCUMENT_TYPE_OPTIONS, DocumentType, AttachedFile } from '../types.ts';
 import { CertificateDesigner } from './CertificateDesigner.tsx';
 import { db, doc, setDoc } from '../firebaseConfig.ts';
+
+// คอนฟิกูเรชัน Google Drive
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // แก้ไขเป็น Client ID ของคุณ
+const DRIVE_FOLDER_ID = '1-YOUR-FOLDER-ID-HERE'; // ระบุ Folder ID ที่ต้องการบันทึกไฟล์
+const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 interface AdminDashboardProps {
   templates: AwardTemplate[];
   recipients: Record<string, Recipient[]>;
   presets: AwardPreset[];
   schools: SchoolItem[];
+  documents: DocumentItem[];
   onSaveTemplate: (template: AwardTemplate) => void;
   onAddRecipient: (recipient: Recipient) => void;
   onDeleteRecipient: (recipientId: string, templateId: string) => void;
@@ -16,16 +23,19 @@ interface AdminDashboardProps {
   onDeletePreset: (id: string) => void;
   onSaveSchool: (name: string) => void;
   onDeleteSchool: (id: string) => void;
+  onSaveDocument: (doc: DocumentItem) => void;
+  onDeleteDocument: (id: string) => void;
   isCloud: boolean;
 }
 
-type ViewMode = 'LIST' | 'CREATE_DESIGN' | 'MANAGE_RECIPIENTS' | 'MANAGE_PRESETS' | 'MANAGE_SCHOOLS' | 'ACCOUNT_SETTINGS';
+type ViewMode = 'LIST' | 'CREATE_DESIGN' | 'MANAGE_RECIPIENTS' | 'MANAGE_PRESETS' | 'MANAGE_SCHOOLS' | 'ACCOUNT_SETTINGS' | 'MANAGE_DOCUMENTS';
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
     templates, 
     recipients, 
     presets,
     schools,
+    documents,
     onSaveTemplate, 
     onAddRecipient,
     onDeleteRecipient,
@@ -33,9 +43,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onDeletePreset,
     onSaveSchool,
     onDeleteSchool,
+    onSaveDocument,
+    onDeleteDocument,
     isCloud
 }) => {
-  // Persistence logic for page refresh
   const savedView = localStorage.getItem('mnr_admin_view') as ViewMode || 'LIST';
   const savedTemplateId = localStorage.getItem('mnr_admin_selected_id');
 
@@ -51,13 +62,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       school: schools[0]?.name || '',
       customDesc: presets[0]?.text || '',
   });
+
+  const [docForm, setDocForm] = useState<Omit<DocumentItem, 'id'>>({
+    title: '',
+    type: 'หนังสือ',
+    date: new Date().toISOString().split('T')[0],
+    files: [],
+    description: ''
+  });
   
+  const [isDriveReady, setIsDriveReady] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [tokenClient, setTokenClient] = useState<any>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
   const [accountForm, setAccountForm] = useState({ username: '', password: '', confirmPassword: '' });
   const [newP, setNewP] = useState('');
   const [newS, setNewS] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const driveFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync state with localStorage
   useEffect(() => {
     localStorage.setItem('mnr_admin_view', view);
     if (selectedTemplateId) {
@@ -67,17 +91,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [view, selectedTemplateId]);
 
+  // เริ่มต้นการเชื่อมต่อ Google API
+  useEffect(() => {
+    if (view === 'MANAGE_DOCUMENTS') {
+      const initGapi = () => {
+        (window as any).gapi.load('client', async () => {
+          await (window as any).gapi.client.init({
+            discoveryDocs: [DISCOVERY_DOC],
+          });
+          setIsDriveReady(true);
+        });
+      };
+
+      const initGis = () => {
+        const client = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: SCOPES,
+          callback: (response: any) => {
+            if (response.error !== undefined) throw response;
+            setAccessToken(response.access_token);
+          },
+        });
+        setTokenClient(client);
+      };
+
+      if ((window as any).gapi) initGapi();
+      if ((window as any).google) initGis();
+    }
+  }, [view]);
+
   const startCreate = () => { setEditingTemplate(undefined); setView('CREATE_DESIGN'); };
   const startEdit = (template: AwardTemplate) => { setEditingTemplate(template); setView('CREATE_DESIGN'); };
   const startManage = (templateId: string) => { 
       setSelectedTemplateId(templateId); 
       setView('MANAGE_RECIPIENTS'); 
-      setRecipientForm({ 
-        name: '', 
-        type: 'นักเรียน', 
-        school: schools[0]?.name || '', 
-        customDesc: presets[0]?.text || '' 
-      }); 
   };
 
   const handleSaveDesign = (template: AwardTemplate) => { 
@@ -162,7 +209,69 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     setBatchNames('');
     setInputMode('SINGLE');
-    alert(`เพิ่มรายชื่อสำเร็จ ${names.length} รายการ`);
+  };
+
+  // ฟังก์ชันอัปโหลดไปยัง Google Drive
+  const handleDriveUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!accessToken) {
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const metadata = {
+        name: file.name,
+        mimeType: file.type,
+        parents: [DRIVE_FOLDER_ID],
+      };
+
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', file);
+
+      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
+        method: 'POST',
+        headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+        body: form,
+      });
+
+      const result = await response.json();
+      if (result.id) {
+        // แชร์ไฟล์ให้ทุกคนที่มีลิงก์สามารถดูได้ (เลือกทำได้)
+        await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}/permissions`, {
+          method: 'POST',
+          headers: new Headers({ 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ role: 'reader', type: 'anyone' }),
+        });
+
+        const fileLink = result.webViewLink || `https://drive.google.com/file/d/${result.id}/view`;
+        setDocForm(prev => ({ ...prev, files: [...prev.files, { name: file.name, url: fileLink }] }));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('อัปโหลดล้มเหลว กรุณาลองใหม่');
+    } finally {
+      setIsUploading(false);
+      if (driveFileInputRef.current) driveFileInputRef.current.value = '';
+    }
+  };
+
+  const removeFileFromDoc = (index: number) => {
+    setDocForm(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }));
+  };
+
+  const handleAddDoc = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docForm.title || docForm.files.length === 0) {
+        alert('กรุณาระบุชื่อเอกสารและแนบไฟล์อย่างน้อย 1 ไฟล์');
+        return;
+    }
+    onSaveDocument({ id: `new-${Date.now()}`, ...docForm });
+    setDocForm({ title: '', type: 'หนังสือ', date: new Date().toISOString().split('T')[0], files: [], description: '' });
   };
 
   const handleUpdateAccount = async (e: React.FormEvent) => {
@@ -199,7 +308,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       return (
           <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-500 pb-20 no-print">
-              {/* Header Bar */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
                   <div className="flex items-center gap-4">
                     <button onClick={() => { setSelectedTemplateId(null); setView('LIST'); }} className="bg-slate-950 text-white w-12 h-12 rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all shadow-md border-b-2 border-slate-900">
@@ -215,9 +323,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </button>
               </div>
 
-              {/* Main Management Section (Top Input / Bottom List) */}
               <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden flex flex-col">
-                  {/* Top Input Area */}
                   <div className="p-8 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex flex-col md:flex-row md:items-end gap-6">
                         <div className="flex-grow">
@@ -262,7 +368,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             )}
                         </div>
 
-                        {/* Side Settings for Input (Horizontal on md, vertical on sm) */}
                         <div className="flex flex-col gap-4 min-w-[300px]">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
@@ -291,7 +396,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
 
-                  {/* Bottom Table Section */}
                   <div className="flex-grow flex flex-col h-[600px]">
                       <div className="px-8 py-4 bg-slate-950 text-white flex justify-between items-center">
                           <span className="text-xs font-black uppercase tracking-[0.2em]"><i className="fas fa-list-ul mr-2 text-blue-400"></i> รายชื่อที่บันทึกแล้ว ({currentRecipients.length})</span>
@@ -348,7 +452,169 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       );
   }
 
-  // Same views for Account/Schools/Presets
+  if (view === 'MANAGE_DOCUMENTS') {
+    return (
+      <div className="space-y-6 animate-in slide-in-from-bottom-5 duration-500 pb-20 no-print">
+        <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
+           <div className="flex items-center gap-4">
+              <button onClick={() => setView('LIST')} className="bg-slate-950 text-white w-12 h-12 rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all shadow-md border-b-2 border-slate-900">
+                  <i className="fas fa-arrow-left"></i>
+              </button>
+              <div>
+                <h2 className="text-xl font-black text-slate-950">คลังเอกสารราชการ</h2>
+                <p className="text-[10px] text-blue-700 font-black uppercase tracking-widest">Multi-File Document Repository</p>
+              </div>
+           </div>
+           <div className="bg-blue-50 px-5 py-3 rounded-2xl border border-blue-200 flex items-center gap-4">
+              <i className="fab fa-google-drive text-blue-600 text-3xl"></i>
+              <div>
+                <div className="text-[11px] font-black text-blue-900 uppercase leading-none mb-1">สถานะ Google Drive</div>
+                <div className="text-[10px] font-bold text-blue-600 uppercase">
+                  {accessToken ? (
+                    <span className="flex items-center text-emerald-600"><i className="fas fa-check-circle mr-1"></i> เชื่อมต่อแล้ว</span>
+                  ) : (
+                    <button onClick={() => tokenClient.requestAccessToken({ prompt: 'consent' })} className="underline hover:text-blue-800 transition-all">คลิกเพื่อเชื่อมต่อ</button>
+                  )}
+                </div>
+              </div>
+           </div>
+        </div>
+
+        <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden">
+            <div className="p-8 bg-slate-50/50 border-b border-slate-100">
+                <form onSubmit={handleAddDoc} className="space-y-6">
+                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                      <div className="md:col-span-5">
+                          <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">ชื่อหัวข้อเอกสาร (เช่น คำสั่งแต่งตั้งคณะกรรมการ...)</label>
+                          <input type="text" value={docForm.title} onChange={e => setDocForm({...docForm, title: e.target.value})} className="w-full border-2 border-slate-200 p-4 rounded-xl text-base font-black outline-none focus:border-blue-600" placeholder="พิมพ์ชื่อเอกสาร..." required />
+                      </div>
+                      <div className="md:col-span-3">
+                          <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">ประเภท</label>
+                          <select value={docForm.type} onChange={e => setDocForm({...docForm, type: e.target.value as DocumentType})} className="w-full border-2 border-slate-200 p-4 rounded-xl text-base font-black outline-none">
+                              {DOCUMENT_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                      </div>
+                      <div className="md:col-span-4">
+                          <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">วันที่ของเอกสาร</label>
+                          <input type="date" value={docForm.date} onChange={e => setDocForm({...docForm, date: e.target.value})} className="w-full border-2 border-slate-200 p-4 rounded-xl text-base font-black outline-none" required />
+                      </div>
+                   </div>
+
+                   {/* ส่วนจัดการไฟล์แนบโดยตรงจาก Google Drive */}
+                   <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm">
+                        <div className="flex justify-between items-center mb-6">
+                            <label className="text-[12px] font-black text-blue-700 uppercase tracking-widest flex items-center">
+                                <i className="fas fa-cloud-upload-alt mr-2"></i> จัดการไฟล์แนบจาก Google Drive
+                            </label>
+                            <span className="text-[10px] font-bold text-slate-400">Folder ID: {DRIVE_FOLDER_ID}</span>
+                        </div>
+                        
+                        <div className="flex flex-col items-center justify-center p-10 border-4 border-dashed border-slate-100 rounded-2xl bg-slate-50/30 group hover:bg-blue-50/30 hover:border-blue-200 transition-all">
+                            <input 
+                              type="file" 
+                              ref={driveFileInputRef} 
+                              className="hidden" 
+                              onChange={handleDriveUpload} 
+                            />
+                            {isUploading ? (
+                              <div className="text-center">
+                                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                <p className="text-sm font-black text-blue-700 uppercase tracking-widest">กำลังอัปโหลดไปยัง Google Drive...</p>
+                              </div>
+                            ) : (
+                              <button 
+                                type="button" 
+                                onClick={() => driveFileInputRef.current?.click()} 
+                                disabled={!accessToken}
+                                className={`flex flex-col items-center gap-4 transition-all ${!accessToken ? 'opacity-30' : 'group-hover:scale-105'}`}
+                              >
+                                <div className="w-20 h-20 bg-white rounded-3xl shadow-lg flex items-center justify-center text-blue-600 text-3xl">
+                                    <i className="fas fa-file-export"></i>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-base font-black text-slate-950 uppercase tracking-tight">เลือกไฟล์เพื่ออัปโหลด</p>
+                                    <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">{!accessToken ? 'กรุณาคลิกเชื่อมต่อ Google Drive ด้านบนก่อน' : 'ไฟล์จะถูกเก็บไว้ในโฟลเดอร์ที่กำหนดโดยอัตโนมัติ'}</p>
+                                </div>
+                              </button>
+                            )}
+                        </div>
+
+                        {docForm.files.length > 0 && (
+                            <div className="mt-8 space-y-3">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">รายการไฟล์ที่เลือก ({docForm.files.length})</p>
+                                {docForm.files.map((f, i) => (
+                                    <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl border-2 border-slate-50 shadow-sm animate-in fade-in slide-in-from-left-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+                                                <i className="fas fa-file-pdf"></i>
+                                            </div>
+                                            <div className="overflow-hidden">
+                                                <span className="text-sm font-black text-slate-900 block truncate">{f.name}</span>
+                                                <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 font-bold hover:underline">ตรวจสอบลิงก์</a>
+                                            </div>
+                                        </div>
+                                        <button type="button" onClick={() => removeFileFromDoc(i)} className="w-10 h-10 rounded-xl text-rose-300 hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center">
+                                            <i className="fas fa-trash-alt text-sm"></i>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                   </div>
+
+                   <button type="submit" className="w-full bg-slate-950 text-white py-5 rounded-2xl font-black uppercase text-sm shadow-xl hover:bg-blue-700 border-b-4 border-slate-900 transition-all active:scale-95 disabled:opacity-30" disabled={docForm.files.length === 0}>
+                        <i className="fas fa-save mr-2"></i> บันทึกข้อมูลเอกสารชุดนี้
+                   </button>
+                </form>
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-100">
+                    <thead className="bg-slate-50">
+                        <tr>
+                            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase w-32">วันที่</th>
+                            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase w-32">ประเภท</th>
+                            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase">รายการเอกสาร</th>
+                            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase w-48">ไฟล์แนบ (Drive)</th>
+                            <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase w-24">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-slate-50">
+                        {documents.map(d => (
+                            <tr key={d.id} className="hover:bg-blue-50/30 group transition-all">
+                                <td className="px-8 py-4 text-sm font-bold text-slate-500">{new Date(d.date).toLocaleDateString('th-TH')}</td>
+                                <td className="px-8 py-4">
+                                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-black uppercase">{d.type}</span>
+                                </td>
+                                <td className="px-8 py-4">
+                                    <div className="text-base font-black text-slate-950 leading-tight">{d.title}</div>
+                                </td>
+                                <td className="px-8 py-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        {(d.files || []).map((f, idx) => (
+                                            <a key={idx} href={f.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-700 hover:text-blue-900 flex items-center gap-2 font-black group/link">
+                                                <i className="fab fa-google-drive text-[12px] opacity-40 group-hover/link:opacity-100 transition-opacity"></i> 
+                                                <span className="truncate max-w-[150px]">{f.name}</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </td>
+                                <td className="px-8 py-4 text-right">
+                                    <button onClick={() => { if(confirm('ต้องการลบข้อมูลเอกสารนี้ใช่หรือไม่?')) onDeleteDocument(d.id); }} className="w-10 h-10 rounded-xl hover:bg-rose-50 text-slate-300 hover:text-rose-600 transition-all flex items-center justify-center">
+                                        <i className="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+    );
+  }
+
+  // View อื่นๆ (โรงเรียน, บัญชี, รางวัล)
   if (view === 'MANAGE_SCHOOLS') {
       return (
         <div className="max-w-2xl mx-auto space-y-6 animate-in slide-in-from-bottom-5 duration-500 pb-16">
@@ -379,27 +645,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="max-w-xl mx-auto space-y-8 animate-in slide-in-from-bottom-5 duration-500 pb-16">
           <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-200">
              <div className="text-center mb-10">
-                <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <i className="fas fa-user-cog text-2xl"></i>
                 </div>
-                <h2 className="text-2xl font-black text-slate-950">ตั้งค่าบัญชีแอดมิน</h2>
+                <h2 className="text-2xl font-black text-slate-950 uppercase tracking-tight">ตั้งค่าบัญชีแอดมิน</h2>
              </div>
              <form onSubmit={handleUpdateAccount} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-black text-slate-900 uppercase mb-3">Username ใหม่</label>
+                  <label className="block text-sm font-black text-slate-900 uppercase mb-3 tracking-widest">Username ใหม่</label>
                   <input type="text" required className="w-full border-2 border-slate-200 bg-slate-50 p-4 rounded-xl text-base font-bold text-slate-950 focus:bg-white focus:border-blue-700 outline-none transition-all" value={accountForm.username} onChange={e => setAccountForm({...accountForm, username: e.target.value})} placeholder="ป้อนชื่อผู้ใช้งานใหม่" />
                 </div>
                 <div>
-                  <label className="block text-sm font-black text-slate-900 uppercase mb-3">Password ใหม่</label>
+                  <label className="block text-sm font-black text-slate-900 uppercase mb-3 tracking-widest">Password ใหม่</label>
                   <input type="password" required className="w-full border-2 border-slate-200 bg-slate-50 p-4 rounded-xl text-base font-bold text-slate-950 focus:bg-white focus:border-blue-700 outline-none transition-all" value={accountForm.password} onChange={e => setAccountForm({...accountForm, password: e.target.value})} placeholder="ป้อนรหัสผ่านใหม่" />
                 </div>
                 <div>
-                  <label className="block text-sm font-black text-slate-900 uppercase mb-3">ยืนยัน Password</label>
+                  <label className="block text-sm font-black text-slate-900 uppercase mb-3 tracking-widest">ยืนยัน Password</label>
                   <input type="password" required className="w-full border-2 border-slate-200 bg-slate-50 p-4 rounded-xl text-base font-bold text-slate-950 focus:bg-white focus:border-blue-700 outline-none transition-all" value={accountForm.confirmPassword} onChange={e => setAccountForm({...accountForm, confirmPassword: e.target.value})} placeholder="ยืนยันรหัสผ่านอีกครั้ง" />
                 </div>
                 <div className="flex gap-4 pt-4">
                   <button type="button" onClick={() => setView('LIST')} className="flex-1 px-6 py-4 rounded-xl font-black text-sm text-slate-400 uppercase tracking-widest hover:bg-slate-50 transition-all">ยกเลิก</button>
-                  <button type="submit" className="flex-[2] bg-slate-950 text-white py-4 rounded-xl font-black text-sm hover:bg-blue-700 shadow-xl border-b-4 border-slate-900 uppercase tracking-widest transition-all">บันทึก</button>
+                  <button type="submit" className="flex-[2] bg-slate-950 text-white py-4 rounded-xl font-black text-sm hover:bg-blue-700 shadow-xl border-b-4 border-slate-900 uppercase tracking-widest transition-all">บันทึกข้อมูล</button>
                 </div>
              </form>
           </div>
@@ -417,7 +683,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
             <div className="flex gap-3 mb-8">
                <input type="text" className="flex-grow border-2 border-slate-200 p-4 rounded-xl text-base font-bold outline-none focus:border-blue-700" value={newP} onChange={e => setNewP(e.target.value)} placeholder="พิมพ์ชื่อรางวัลใหม่..." />
-               <button onClick={() => { if(newP) { onSavePreset(newP); setNewP(''); } }} className="bg-blue-700 text-white px-8 rounded-xl font-black text-sm uppercase shadow-lg border-b-2 border-blue-900">เพิ่ม</button>
+               <button onClick={() => { if(newP) { onSavePreset(newP); setNewP(''); } }} className="bg-blue-700 text-white px-8 rounded-xl font-black text-sm uppercase shadow-lg border-b-2 border-blue-900">เพิ่มรางวัล</button>
             </div>
             <div className="space-y-3">
                {presets.map(p => (
@@ -436,14 +702,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="space-y-10 animate-in fade-in duration-700 pb-16 no-print">
       <div className="flex flex-col md:flex-row justify-between items-end gap-5 bg-white p-10 rounded-2xl shadow-lg border border-slate-200">
           <div className="text-center md:text-left">
-            <h2 className="text-xl font-black text-slate-950 tracking-tight leading-none">แผงควบคุม</h2>
-            <p className="text-blue-800 mt-2 font-black uppercase tracking-widest text-[11px] italic">School Administrator Dashboard</p>
+            <h2 className="text-xl font-black text-slate-950 tracking-tight leading-none">แผงควบคุมแอดมิน</h2>
+            <p className="text-blue-800 mt-2 font-black uppercase tracking-widest text-[11px] italic">Muang Nang Rong School Group E-System</p>
           </div>
           <div className="flex flex-wrap justify-center md:justify-end gap-3">
-              <button onClick={() => setView('ACCOUNT_SETTINGS')} className="bg-white text-slate-900 px-6 py-3 rounded-xl shadow-md hover:bg-slate-50 transition-all font-black text-[12px] flex items-center border-b-2 border-slate-200 uppercase"><i className="fas fa-user-shield mr-2 text-slate-400"></i> บัญชี</button>
-              <button onClick={() => setView('MANAGE_SCHOOLS')} className="bg-white text-emerald-700 border-2 border-emerald-100 px-6 py-3 rounded-xl shadow-sm hover:bg-emerald-50 transition-all font-black text-[12px] flex items-center uppercase"><i className="fas fa-school mr-2"></i> ตั้งค่าโรงเรียน</button>
-              <button onClick={() => setView('MANAGE_PRESETS')} className="bg-slate-950 text-white px-6 py-3 rounded-xl shadow-md hover:bg-slate-800 transition-all font-black text-[12px] flex items-center border-b-2 border-slate-900 uppercase"><i className="fas fa-tasks mr-2 text-blue-400"></i> ตั้งค่ารางวัล</button>
-              <button onClick={startCreate} className="bg-blue-700 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-blue-800 transition-all font-black text-[12px] flex items-center border-b-2 border-blue-900 uppercase"><i className="fas fa-plus-circle mr-2"></i> สร้างใหม่</button>
+              <button onClick={() => setView('ACCOUNT_SETTINGS')} className="bg-white text-slate-900 px-6 py-3 rounded-xl shadow-md hover:bg-slate-50 transition-all font-black text-[12px] flex items-center border-b-2 border-slate-200 uppercase tracking-widest"><i className="fas fa-user-shield mr-2 text-slate-400"></i> บัญชี</button>
+              <button onClick={() => setView('MANAGE_SCHOOLS')} className="bg-white text-emerald-700 border-2 border-emerald-100 px-6 py-3 rounded-xl shadow-sm hover:bg-emerald-50 transition-all font-black text-[12px] flex items-center uppercase tracking-widest"><i className="fas fa-school mr-2"></i> โรงเรียน</button>
+              <button onClick={() => setView('MANAGE_DOCUMENTS')} className="bg-amber-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-amber-700 transition-all font-black text-[12px] flex items-center border-b-4 border-amber-950 uppercase tracking-widest"><i className="fas fa-file-invoice mr-2"></i> คลังเอกสาร</button>
+              <button onClick={() => setView('MANAGE_PRESETS')} className="bg-slate-950 text-white px-6 py-3 rounded-xl shadow-md hover:bg-slate-800 transition-all font-black text-[12px] flex items-center border-b-2 border-slate-900 uppercase tracking-widest"><i className="fas fa-tasks mr-2 text-blue-400"></i> รายการรางวัล</button>
+              <button onClick={startCreate} className="bg-blue-700 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-blue-800 transition-all font-black text-[12px] flex items-center border-b-4 border-blue-950 uppercase tracking-widest"><i className="fas fa-plus-circle mr-2"></i> สร้างดีไซน์ใหม่</button>
           </div>
       </div>
 

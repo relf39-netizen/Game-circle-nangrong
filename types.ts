@@ -8,6 +8,15 @@ export const TYPE_OPTIONS = [
   'บุคลากรทางการศึกษา'
 ];
 
+export type DocumentType = 'หนังสือ' | 'คำสั่ง' | 'ประกาศ' | 'วาระการประชุม';
+
+export const DOCUMENT_TYPE_OPTIONS: DocumentType[] = [
+  'หนังสือ',
+  'คำสั่ง',
+  'ประกาศ',
+  'วาระการประชุม'
+];
+
 export const FONT_OPTIONS = [
   { id: 'Sarabun', name: 'สารบรรณ (ทางการ)' },
   { id: 'Krub', name: 'ครับ (ทันสมัย)' },
@@ -41,6 +50,21 @@ export interface AwardPreset {
 export interface SchoolItem {
   id: string;
   name: string;
+}
+
+export interface AttachedFile {
+  name: string;
+  url: string;
+}
+
+export interface DocumentItem {
+  id: string;
+  title: string;
+  type: DocumentType;
+  date: string;
+  files: AttachedFile[]; // เปลี่ยนจาก url: string เป็น files: AttachedFile[]
+  description?: string;
+  created_at?: string;
 }
 
 export interface TextElementStyle {
