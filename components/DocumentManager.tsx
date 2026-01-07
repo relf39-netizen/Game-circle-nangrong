@@ -138,32 +138,32 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-6">
                 <label className="block text-[9px] font-black text-slate-500 uppercase mb-1">หัวข้อเอกสาร</label>
-                <input type="text" value={docForm.title} onChange={e => setDocForm({...docForm, title: e.target.value})} className="w-full border-2 border-slate-200 p-3 rounded-xl text-sm font-bold outline-none focus:border-blue-600" placeholder="ชื่อหนังสือหรือประกาศ..." required />
+                <input type="text" value={docForm.title} onChange={e => setDocForm({...docForm, title: e.target.value})} className="w-full border-2 border-slate-300 p-3 rounded-xl text-sm font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-50" placeholder="ชื่อหนังสือหรือประกาศ..." required />
               </div>
               <div className="md:col-span-3">
                 <label className="block text-[9px] font-black text-slate-500 uppercase mb-1">ประเภท</label>
-                <select value={docForm.type} onChange={e => setDocForm({...docForm, type: e.target.value as DocumentType})} className="w-full border-2 border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                <select value={docForm.type} onChange={e => setDocForm({...docForm, type: e.target.value as DocumentType})} className="w-full border-2 border-slate-300 p-3 rounded-xl text-sm font-bold outline-none focus:border-blue-600">
                   {DOCUMENT_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
               <div className="md:col-span-3">
                 <label className="block text-[9px] font-black text-slate-500 uppercase mb-1">วันที่</label>
-                <input type="date" value={docForm.date} onChange={e => setDocForm({...docForm, date: e.target.value})} className="w-full border-2 border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" required />
+                <input type="date" value={docForm.date} onChange={e => setDocForm({...docForm, date: e.target.value})} className="w-full border-2 border-slate-300 p-3 rounded-xl text-sm font-bold outline-none focus:border-blue-600" required />
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-slate-200 hover:border-blue-400 cursor-pointer text-center" onClick={() => fileInputRef.current?.click()}>
+            <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-slate-300 hover:border-blue-400 cursor-pointer text-center group" onClick={() => fileInputRef.current?.click()}>
               <input type="file" ref={fileInputRef} className="hidden" multiple accept=".pdf" onChange={handleFileSelect} />
               <div className="flex flex-col items-center gap-2">
-                <i className="fas fa-file-pdf text-2xl text-blue-600"></i>
-                <span className="text-xs font-black uppercase text-slate-900">อัปโหลดไฟล์ PDF</span>
+                <i className="fas fa-file-pdf text-2xl text-slate-300 group-hover:text-blue-600 transition-colors"></i>
+                <span className="text-xs font-black uppercase text-slate-400 group-hover:text-slate-900 transition-colors">คลิกเพื่อเลือกไฟล์ PDF</span>
               </div>
             </div>
 
             {pendingFiles.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {pendingFiles.map((file, i) => (
-                  <div key={i} className="bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 flex items-center gap-2">
+                  <div key={i} className="bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-300 flex items-center gap-2">
                     <span className="text-[10px] font-bold text-amber-700 truncate max-w-[150px]">{file.name}</span>
                     <button type="button" onClick={() => removePendingFile(i)} className="text-amber-400 hover:text-amber-600"><i className="fas fa-times"></i></button>
                   </div>

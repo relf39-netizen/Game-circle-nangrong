@@ -194,12 +194,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
              <h2 className="text-xl font-black text-slate-900 uppercase">จัดการรายชื่อโรงเรียน</h2>
            </div>
            <div className="flex gap-3 mb-8">
-             <input type="text" value={newSchoolName} onChange={e => setNewSchoolName(e.target.value)} className="flex-grow border-2 border-slate-100 p-4 rounded-xl font-bold outline-none focus:border-blue-600" placeholder="ชื่อโรงเรียน..." />
-             <button onClick={() => { if(newSchoolName.trim()){ onSaveSchool(newSchoolName.trim()); setNewSchoolName(''); } }} className="bg-blue-700 text-white px-8 rounded-xl font-black text-sm uppercase">เพิ่ม</button>
+             <input type="text" value={newSchoolName} onChange={e => setNewSchoolName(e.target.value)} className="flex-grow border-2 border-slate-300 p-4 rounded-xl font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" placeholder="ชื่อโรงเรียน..." />
+             <button onClick={() => { if(newSchoolName.trim()){ onSaveSchool(newSchoolName.trim()); setNewSchoolName(''); } }} className="bg-blue-700 text-white px-8 rounded-xl font-black text-sm uppercase shadow-lg border-b-4 border-blue-900 active:translate-y-1 active:border-b-0 transition-all">เพิ่ม</button>
            </div>
            <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
              {schools.map(s => (
-               <div key={s.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl group hover:bg-white hover:shadow-md transition-all">
+               <div key={s.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl group hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-slate-200">
                  <span className="font-bold text-slate-700">{s.name}</span>
                  <button onClick={() => { if(confirm('ลบโรงเรียนนี้?')) onDeleteSchool(s.id); }} className="text-slate-300 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100"><i className="fas fa-trash-alt"></i></button>
                </div>
@@ -219,12 +219,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
              <h2 className="text-xl font-black text-slate-900 uppercase">จัดการรางวัล/คำอธิบาย</h2>
            </div>
            <div className="flex gap-3 mb-8">
-             <input type="text" value={newPresetText} onChange={e => setNewPresetText(e.target.value)} className="flex-grow border-2 border-slate-100 p-4 rounded-xl font-bold outline-none focus:border-blue-600" placeholder="ข้อความรางวัล..." />
-             <button onClick={() => { if(newPresetText.trim()){ onSavePreset(newPresetText.trim()); setNewPresetText(''); } }} className="bg-blue-700 text-white px-8 rounded-xl font-black text-sm uppercase">เพิ่ม</button>
+             <input type="text" value={newPresetText} onChange={e => setNewPresetText(e.target.value)} className="flex-grow border-2 border-slate-300 p-4 rounded-xl font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" placeholder="ข้อความรางวัล..." />
+             <button onClick={() => { if(newPresetText.trim()){ onSavePreset(newPresetText.trim()); setNewPresetText(''); } }} className="bg-blue-700 text-white px-8 rounded-xl font-black text-sm uppercase shadow-lg border-b-4 border-blue-900 active:translate-y-1 active:border-b-0 transition-all">เพิ่ม</button>
            </div>
            <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
              {presets.map(p => (
-               <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl group hover:bg-white hover:shadow-md transition-all">
+               <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl group hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-slate-200">
                  <span className="font-bold text-slate-700">{p.text}</span>
                  <button onClick={() => { if(confirm('ลบรางวัลนี้?')) onDeletePreset(p.id); }} className="text-slate-300 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100"><i className="fas fa-trash-alt"></i></button>
                </div>
@@ -238,7 +238,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   if (view === 'ACCOUNT_SETTINGS') {
     return (
       <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom-5 duration-500 pb-16">
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border-2 border-slate-100">
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border-2 border-slate-200">
            <div className="text-center mb-8">
               <h2 className="text-2xl font-black text-slate-950 uppercase tracking-tight">System Settings</h2>
            </div>
@@ -248,8 +248,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                    <i className="fas fa-network-wired text-blue-600"></i> Cloud Connectivity
                 </h3>
                 <div className="space-y-4">
-                  <input type="text" className="w-full border-2 border-slate-200 bg-white p-4 rounded-xl text-sm font-bold outline-none" value={driveFolderId} onChange={e => setDriveFolderId(e.target.value)} placeholder="Google Drive Folder ID" />
-                  <input type="text" className="w-full border-2 border-slate-200 bg-white p-4 rounded-xl text-sm font-bold outline-none" value={appsScriptUrl} onChange={e => setAppsScriptUrl(e.target.value)} placeholder="Apps Script URL" />
+                  <input type="text" className="w-full border-2 border-slate-300 bg-white p-4 rounded-xl text-sm font-bold outline-none focus:border-blue-600" value={driveFolderId} onChange={e => setDriveFolderId(e.target.value)} placeholder="Google Drive Folder ID" />
+                  <input type="text" className="w-full border-2 border-slate-300 bg-white p-4 rounded-xl text-sm font-bold outline-none focus:border-blue-600" value={appsScriptUrl} onChange={e => setAppsScriptUrl(e.target.value)} placeholder="Apps Script URL" />
                 </div>
                 <button onClick={saveSystemConfig} className="w-full bg-blue-700 text-white py-4 rounded-xl font-black text-xs uppercase shadow-md">บันทึก Cloud Config</button>
               </div>
@@ -258,8 +258,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                    <i className="fas fa-user-lock text-rose-600"></i> Security
                 </h3>
                 <form onSubmit={async (e) => { e.preventDefault(); if(accountForm.password === accountForm.confirmPassword && db) { await setDoc(doc(db, 'config', 'admin'), { username: accountForm.username, password: accountForm.password }); alert('อัปเดตบัญชีสำเร็จ'); } }} className="space-y-4">
-                  <input type="text" required className="w-full border-2 border-slate-100 p-4 rounded-xl text-sm font-bold outline-none" value={accountForm.username} onChange={e => setAccountForm({...accountForm, username: e.target.value})} placeholder="New Username" />
-                  <input type="password" required className="w-full border-2 border-slate-100 p-4 rounded-xl text-sm font-bold outline-none" value={accountForm.password} onChange={e => setAccountForm({...accountForm, password: e.target.value})} placeholder="New Password" />
+                  <input type="text" required className="w-full border-2 border-slate-300 p-4 rounded-xl text-sm font-bold outline-none focus:border-blue-600" value={accountForm.username} onChange={e => setAccountForm({...accountForm, username: e.target.value})} placeholder="New Username" />
+                  <input type="password" required className="w-full border-2 border-slate-300 p-4 rounded-xl text-sm font-bold outline-none focus:border-blue-600" value={accountForm.password} onChange={e => setAccountForm({...accountForm, password: e.target.value})} placeholder="New Password" />
                   <button type="submit" className="w-full bg-slate-950 text-white py-4 rounded-xl font-black text-xs uppercase shadow-md">อัปเดตความปลอดภัย</button>
                 </form>
               </div>
@@ -340,7 +340,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         เลขที่ถัดไป: {nextNumberPreview}
                                     </span>
                                 </div>
-                                <div className="flex bg-white p-1 rounded-xl border border-slate-200">
+                                <div className="flex bg-white p-1 rounded-xl border border-slate-300">
                                     <button onClick={() => setInputMode('SINGLE')} className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${inputMode === 'SINGLE' ? 'bg-slate-950 text-white shadow-md' : 'text-slate-400'}`}>คนเดียว</button>
                                     <button onClick={() => setInputMode('BATCH')} className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${inputMode === 'BATCH' ? 'bg-slate-950 text-white shadow-md' : 'text-slate-400'}`}>กลุ่ม</button>
                                 </div>
@@ -363,12 +363,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                     setCurrentPage(1); // Back to first page to see new entry
                                     nameInputRef.current?.focus();
                                 }} className="flex flex-col gap-3 h-full">
-                                    <input ref={nameInputRef} type="text" value={recipientForm.name} onChange={e => setRecipientForm({...recipientForm, name: e.target.value})} className="w-full border-2 border-slate-200 bg-white p-4 rounded-2xl text-xl font-bold text-slate-950 focus:border-blue-600 outline-none transition-all placeholder:text-slate-300" placeholder="ระบุ ชื่อ-นามสกุล..." required autoFocus />
+                                    <input ref={nameInputRef} type="text" value={recipientForm.name} onChange={e => setRecipientForm({...recipientForm, name: e.target.value})} className="w-full border-2 border-slate-400 bg-white p-4 rounded-2xl text-xl font-bold text-slate-950 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300" placeholder="ระบุ ชื่อ-นามสกุล..." required autoFocus />
                                     <button type="submit" className="w-full bg-blue-700 text-white py-4 rounded-2xl shadow-lg font-black text-sm uppercase tracking-widest border-b-4 border-blue-950 active:translate-y-1 active:border-b-0 transition-all">บันทึกรายชื่อ</button>
                                 </form>
                             ) : (
                                 <div className="flex flex-col gap-3 h-full">
-                                    <textarea value={batchNames} onChange={e => setBatchNames(e.target.value)} className="w-full border-2 border-slate-200 bg-white p-4 rounded-2xl text-lg font-bold outline-none min-h-[160px] focus:border-indigo-600 transition-all placeholder:text-slate-300" placeholder="วางรายชื่อที่นี่... (1 ชื่อต่อบรรทัด)" />
+                                    <textarea value={batchNames} onChange={e => setBatchNames(e.target.value)} className="w-full border-2 border-slate-400 bg-white p-4 rounded-2xl text-lg font-bold outline-none min-h-[160px] focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all placeholder:text-slate-300" placeholder="วางรายชื่อที่นี่... (1 ชื่อต่อบรรทัด)" />
                                     <button onClick={() => {
                                         if (!selectedTemplateId || !batchNames.trim()) return;
                                         const names = batchNames.split('\n').map(n => n.trim()).filter(n => n !== '');
@@ -396,13 +396,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">ประเภทผู้รับ</label>
-                                    <select value={recipientForm.type} onChange={e => setRecipientForm({...recipientForm, type: e.target.value})} className="w-full border-2 border-slate-100 bg-white p-3 rounded-xl text-xs font-black shadow-sm outline-none focus:border-blue-500">
+                                    <select value={recipientForm.type} onChange={e => setRecipientForm({...recipientForm, type: e.target.value})} className="w-full border-2 border-slate-300 bg-white p-3 rounded-xl text-xs font-black shadow-sm outline-none focus:border-blue-500">
                                         {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                                     </select>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">โรงเรียน/หน่วยงาน</label>
-                                    <select value={recipientForm.school} onChange={e => setRecipientForm({...recipientForm, school: e.target.value})} className="w-full border-2 border-slate-100 bg-white p-3 rounded-xl text-xs font-black shadow-sm outline-none focus:border-blue-500">
+                                    <select value={recipientForm.school} onChange={e => setRecipientForm({...recipientForm, school: e.target.value})} className="w-full border-2 border-slate-300 bg-white p-3 rounded-xl text-xs font-black shadow-sm outline-none focus:border-blue-500">
                                         <option value="">-- เลือกโรงเรียน --</option>
                                         {schools.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                                     </select>
@@ -419,21 +419,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 </p>
                             </div>
 
-                            <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">รายละเอียดรางวัล / คำอธิบาย</label>
                                 <div className="flex flex-wrap gap-1.5 mb-1 max-h-[80px] overflow-y-auto p-1 custom-scrollbar">
                                     {presets.map(p => (
                                         <button 
                                           key={p.id} 
                                           onClick={() => setRecipientForm({...recipientForm, customDesc: p.text})}
-                                          className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-slate-600 hover:border-blue-500 hover:text-blue-700 hover:shadow-sm transition-all whitespace-nowrap"
+                                          className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-[9px] font-black text-slate-600 hover:border-blue-500 hover:text-blue-700 hover:shadow-sm transition-all whitespace-nowrap"
                                         >
                                           {p.text}
                                         </button>
                                     ))}
                                     {presets.length === 0 && <span className="text-[9px] text-gray-300 italic p-1">ยังไม่มีรายการแนะนำ</span>}
                                 </div>
-                                <input type="text" value={recipientForm.customDesc} onChange={e => setRecipientForm({...recipientForm, customDesc: e.target.value})} className="w-full border-2 border-white bg-white p-3 rounded-xl text-xs font-bold outline-none focus:border-blue-500 shadow-sm" placeholder="พิมพ์รางวัลที่นี่..." />
+                                <input type="text" value={recipientForm.customDesc} onChange={e => setRecipientForm({...recipientForm, customDesc: e.target.value})} className="w-full border-2 border-slate-300 bg-white p-3 rounded-xl text-xs font-bold outline-none focus:border-blue-500 shadow-sm" placeholder="พิมพ์รางวัลที่นี่..." />
                                 <div className="flex items-center justify-between px-1">
                                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">รางวัลเริ่มต้น:</span>
                                     <span className="text-[9px] text-blue-800 font-black">{currentTemplate.defaultDescription || '-'}</span>
@@ -502,7 +502,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <button 
                                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                   disabled={currentPage === 1}
-                                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${currentPage === 1 ? 'text-slate-200 bg-transparent' : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-500 hover:text-blue-600 shadow-sm'}`}
+                                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${currentPage === 1 ? 'text-slate-200 bg-transparent' : 'bg-white border border-slate-300 text-slate-600 hover:border-blue-500 hover:text-blue-600 shadow-sm'}`}
                                 >
                                     <i className="fas fa-chevron-left text-xs"></i>
                                 </button>
@@ -514,7 +514,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         {idx > 0 && arr[idx-1] !== p - 1 && <span className="px-2 self-center text-slate-300">...</span>}
                                         <button 
                                           onClick={() => setCurrentPage(p)}
-                                          className={`w-10 h-10 rounded-xl font-black text-xs transition-all ${currentPage === p ? 'bg-blue-700 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                          className={`w-10 h-10 rounded-xl font-black text-xs transition-all ${currentPage === p ? 'bg-blue-700 text-white shadow-md' : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50'}`}
                                         >
                                             {p}
                                         </button>
@@ -524,7 +524,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <button 
                                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                   disabled={currentPage === totalPages}
-                                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${currentPage === totalPages ? 'text-slate-200 bg-transparent' : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-500 hover:text-blue-600 shadow-sm'}`}
+                                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${currentPage === totalPages ? 'text-slate-200 bg-transparent' : 'bg-white border border-slate-300 text-slate-600 hover:border-blue-500 hover:text-blue-600 shadow-sm'}`}
                                 >
                                     <i className="fas fa-chevron-right text-xs"></i>
                                 </button>
