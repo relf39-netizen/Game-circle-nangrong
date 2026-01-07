@@ -6,37 +6,7 @@ import { DocumentManager } from './DocumentManager.tsx';
 import { CertificateRenderer } from './CertificateRenderer.tsx';
 import { db, doc, setDoc, getDoc } from '../firebaseConfig.ts';
 
-const GAS_CODE = `/**
- * MNR E-SYSTEM: Google Apps Script Backend (Proxy Engine)
- * Deployment: Execute as "Me", Access "Anyone"
- */
-function doPost(e) {
-  var result = { status: 'error', message: 'Unknown error' };
-  try {
-    var params = JSON.parse(e.postData.contents);
-    
-    if (params.action === 'uploadFile') {
-      var folder = DriveApp.getFolderById(params.folderId);
-      var decodedData = Utilities.base64Decode(params.base64Data);
-      var blob = Utilities.newBlob(decodedData, params.mimeType, params.fileName);
-      var file = folder.createFile(blob);
-      
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      
-      result = {
-        status: 'success',
-        id: file.getId(),
-        name: file.getName(),
-        url: "https://drive.google.com/file/d/" + file.getId() + "/view?usp=sharing"
-      };
-    }
-  } catch (err) {
-    result.message = err.toString();
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
-}`;
+const ITEMS_PER_PAGE = 10; // จำนวนรายการต่อหน้า
 
 interface AdminDashboardProps {
   templates: AwardTemplate[];
@@ -74,6 +44,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<Set<string>>(new Set());
   const [usePrefix, setUsePrefix] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const [newSchoolName, setNewSchoolName] = useState('');
   const [newPresetText, setNewPresetText] = useState('');
@@ -87,7 +58,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [driveFolderId, setDriveFolderId] = useState('');
   const [appsScriptUrl, setAppsScriptUrl] = useState('');
-  const [copySuccess, setCopySuccess] = useState(false);
   const [accountForm, setAccountForm] = useState({ username: '', password: '', confirmPassword: '' });
   
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -111,6 +81,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
     loadConfig();
   }, [view, selectedTemplateId]);
+
+  // Reset page when template changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTemplateId]);
 
   const startCreate = () => { setEditingTemplate(undefined); setView('CREATE_DESIGN'); };
   const startManage = (templateId: string) => { setSelectedTemplateId(templateId); setView('MANAGE_RECIPIENTS'); };
@@ -299,14 +274,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   if (view === 'MANAGE_RECIPIENTS') {
       const currentTemplate = templates.find(t => t.id === selectedTemplateId);
-      const currentRecipients = (recipients[selectedTemplateId!] || []).sort((a,b) => {
+      const allRecipients = (recipients[selectedTemplateId!] || []).sort((a,b) => {
           const seqA = parseInt(a.runningNumber.split('/').pop()?.split(' ').pop() || a.runningNumber) || 0;
           const seqB = parseInt(b.runningNumber.split('/').pop()?.split(' ').pop() || b.runningNumber) || 0;
           return seqB - seqA;
       });
 
+      // Pagination Logic
+      const totalItems = allRecipients.length;
+      const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+      const paginatedRecipients = allRecipients.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
       if (!currentTemplate) return <div className="py-20 text-center"><button onClick={() => setView('LIST')} className="bg-slate-950 text-white px-8 py-3 rounded-xl">กลับหน้าหลัก</button></div>;
-      const allSelected = currentRecipients.length > 0 && selectedRecipientIds.size === currentRecipients.length;
+      const allSelected = paginatedRecipients.length > 0 && paginatedRecipients.every(r => selectedRecipientIds.has(r.id));
 
       const getNewRunningNumber = (indexOffset = 0) => {
           const thaiYear = new Date().getFullYear() + 543;
@@ -380,6 +360,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         customDescription: recipientForm.customDesc || undefined
                                     });
                                     setRecipientForm(prev => ({ ...prev, name: '' })); 
+                                    setCurrentPage(1); // Back to first page to see new entry
                                     nameInputRef.current?.focus();
                                 }} className="flex flex-col gap-3 h-full">
                                     <input ref={nameInputRef} type="text" value={recipientForm.name} onChange={e => setRecipientForm({...recipientForm, name: e.target.value})} className="w-full border-2 border-slate-200 bg-white p-4 rounded-2xl text-xl font-bold text-slate-950 focus:border-blue-600 outline-none transition-all placeholder:text-slate-300" placeholder="ระบุ ชื่อ-นามสกุล..." required autoFocus />
@@ -404,6 +385,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         });
                                         setBatchNames('');
                                         setInputMode('SINGLE');
+                                        setCurrentPage(1); // Back to first page
                                     }} className="w-full bg-indigo-700 text-white py-4 rounded-2xl shadow-lg font-black text-sm uppercase tracking-widest border-b-4 border-indigo-950 active:translate-y-1 active:border-b-0 transition-all">เพิ่มกลุ่มรายชื่อ</button>
                                 </div>
                             )}
@@ -461,12 +443,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex-grow flex flex-col h-[480px]">
+                  <div className="flex-grow flex flex-col min-h-[500px]">
                       <div className="overflow-y-auto flex-grow custom-scrollbar">
                         <table className="min-w-full divide-y divide-slate-100">
                             <thead className="bg-slate-50 sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-4 py-4 w-12"><input type="checkbox" checked={allSelected} onChange={(e) => { if (e.target.checked) setSelectedRecipientIds(new Set(currentRecipients.map(r => r.id))); else setSelectedRecipientIds(new Set()); }} className="accent-blue-700" /></th>
+                                    <th className="px-4 py-4 w-12"><input type="checkbox" checked={allSelected} onChange={(e) => { const next = new Set(selectedRecipientIds); if (e.target.checked) paginatedRecipients.forEach(r => next.add(r.id)); else paginatedRecipients.forEach(r => next.delete(r.id)); setSelectedRecipientIds(next); }} className="accent-blue-700" /></th>
                                     <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">เลขที่</th>
                                     <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">รายชื่อ - รางวัล</th>
                                     <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">โรงเรียน</th>
@@ -475,7 +457,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {currentRecipients.map((recipient) => (
+                                {paginatedRecipients.map((recipient) => (
                                     <tr key={recipient.id} className={`hover:bg-blue-50/40 group transition-all ${selectedRecipientIds.has(recipient.id) ? 'bg-blue-50/60' : ''}`}>
                                         <td className="px-4 py-3"><input type="checkbox" checked={selectedRecipientIds.has(recipient.id)} onChange={(e) => { const next = new Set(selectedRecipientIds); if (e.target.checked) next.add(recipient.id); else next.delete(recipient.id); setSelectedRecipientIds(next); }} className="accent-blue-700" /></td>
                                         <td className="px-6 py-3 text-[11px] font-bold text-slate-400">{toThaiDigits(recipient.runningNumber)}</td>
@@ -502,7 +484,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 ))}
                             </tbody>
                         </table>
+                        {paginatedRecipients.length === 0 && (
+                            <div className="py-20 text-center">
+                                <i className="fas fa-users-slash text-4xl text-slate-100 mb-4"></i>
+                                <p className="text-slate-300 font-black text-xs uppercase tracking-widest">ไม่พบรายชื่อในระบบ</p>
+                            </div>
+                        )}
                       </div>
+
+                      {/* Pagination Controls */}
+                      {totalPages > 1 && (
+                        <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                แสดง {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} จาก {totalItems} รายการ
+                            </div>
+                            <div className="flex gap-1">
+                                <button 
+                                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                  disabled={currentPage === 1}
+                                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${currentPage === 1 ? 'text-slate-200 bg-transparent' : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-500 hover:text-blue-600 shadow-sm'}`}
+                                >
+                                    <i className="fas fa-chevron-left text-xs"></i>
+                                </button>
+                                
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                  .filter(p => p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1))
+                                  .map((p, idx, arr) => (
+                                    <React.Fragment key={p}>
+                                        {idx > 0 && arr[idx-1] !== p - 1 && <span className="px-2 self-center text-slate-300">...</span>}
+                                        <button 
+                                          onClick={() => setCurrentPage(p)}
+                                          className={`w-10 h-10 rounded-xl font-black text-xs transition-all ${currentPage === p ? 'bg-blue-700 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                        >
+                                            {p}
+                                        </button>
+                                    </React.Fragment>
+                                  ))}
+
+                                <button 
+                                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                  disabled={currentPage === totalPages}
+                                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${currentPage === totalPages ? 'text-slate-200 bg-transparent' : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-500 hover:text-blue-600 shadow-sm'}`}
+                                >
+                                    <i className="fas fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                      )}
                   </div>
               </div>
           </div>

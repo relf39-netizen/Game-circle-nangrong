@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { AwardTemplate, Recipient, SchoolItem, DocumentItem, DocumentType } from '../types.ts';
+import { AwardTemplate, Recipient, SchoolItem, DocumentItem, DocumentType, toThaiDigits } from '../types.ts';
 import { CertificateRenderer } from './CertificateRenderer.tsx';
 
 interface PublicSearchProps {
@@ -99,26 +99,58 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ templates, recipient
                 </div>
             </div>
         </div>
+
         {filteredRecipients.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRecipients.map(r => (
-                <div key={r.id} className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 flex items-center justify-between group hover:border-blue-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                   <div className="overflow-hidden">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-black text-slate-950 block truncate group-hover:text-blue-600 transition-colors tracking-tight">{r.name}</span>
-                        {r.pdfUrl && <i className="fas fa-cloud-check text-emerald-500"></i>}
-                      </div>
-                      <div className="flex flex-wrap gap-2.5 mt-3">
-                         <span className="text-[12px] font-black text-indigo-800 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">{r.school || 'ไม่ระบุโรงเรียน'}</span>
-                         <span className="text-[12px] font-black text-emerald-800 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">{r.type || 'นักเรียน'}</span>
-                      </div>
-                   </div>
-                   <div className="shrink-0 flex gap-3">
-                      <button onClick={() => setSelectedResult({ template: selectedActivity, recipient: r })} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-blue-100 hover:text-blue-700 transition-all shadow-sm"><i className="fas fa-eye text-lg"></i></button>
-                      <button onClick={() => handleDownloadAction(selectedActivity, r)} className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-lg border-b-2 ${r.pdfUrl ? 'bg-emerald-600 border-emerald-900 text-white' : 'bg-blue-700 border-blue-950 text-white'}`}><i className={`fas ${r.pdfUrl ? 'fa-cloud-download-alt' : 'fa-file-pdf'} text-lg`}></i></button>
-                   </div>
-                </div>
-              ))}
+          <div className="bg-white rounded-[2rem] shadow-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-100">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">เลขที่</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">รายชื่อ - รางวัล</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">โรงเรียน/หน่วยงาน</th>
+                    <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">ดาวน์โหลด</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredRecipients.map((r) => (
+                    <tr key={r.id} className="hover:bg-blue-50/40 group transition-all">
+                      <td className="px-8 py-4 text-[11px] font-bold text-slate-400">{toThaiDigits(r.runningNumber)}</td>
+                      <td className="px-8 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-black text-slate-950 group-hover:text-blue-700 transition-colors">{r.name}</span>
+                          {r.pdfUrl && <i className="fas fa-cloud-check text-emerald-500 text-xs"></i>}
+                        </div>
+                        <p className="text-[11px] text-blue-700 font-bold italic">
+                          {r.customDescription || selectedActivity.defaultDescription || '-'}
+                        </p>
+                      </td>
+                      <td className="px-8 py-4">
+                        <span className="text-[12px] font-black text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 inline-block">
+                          {r.school || 'ไม่ระบุ'}
+                        </span>
+                      </td>
+                      <td className="px-8 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                           <button onClick={() => setSelectedResult({ template: selectedActivity, recipient: r })} className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
+                             <i className="fas fa-eye text-sm"></i>
+                           </button>
+                           <button 
+                             onClick={() => handleDownloadAction(selectedActivity, r)} 
+                             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-md border-b-2 ${r.pdfUrl ? 'bg-emerald-600 border-emerald-900 text-white' : 'bg-blue-700 border-blue-950 text-white'}`}
+                           >
+                             <i className={`fas ${r.pdfUrl ? 'fa-cloud-download-alt' : 'fa-file-pdf'} text-sm`}></i>
+                           </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="p-6 bg-slate-50/30 border-t border-slate-100 flex justify-between items-center">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">รวมทั้งหมด {filteredRecipients.length} รายชื่อ</span>
+            </div>
           </div>
         ) : (
           <div className="py-24 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-200 shadow-inner">

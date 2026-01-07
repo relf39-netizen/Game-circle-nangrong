@@ -121,9 +121,10 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
           color: el.color,
           fontFamily: `'${el.fontFamily}', 'Sarabun', sans-serif`,
           textAlign: el.align,
-          width: el.width ? `${el.width}px` : 'auto',
+          // ใช้ max-content เพื่อให้ div กว้างเท่าข้อความจริง และ translateX(-50%) จะจัดกึ่งกลางได้แม่นยำแม้ล้นขอบ
+          width: 'max-content', 
           transform: el.align === 'center' ? 'translateX(-50%)' : el.align === 'right' ? 'translateX(-100%)' : 'none',
-          whiteSpace: 'pre-wrap',
+          whiteSpace: 'nowrap',
           lineHeight: 1.3,
           zIndex: 20,
           pointerEvents: 'none',

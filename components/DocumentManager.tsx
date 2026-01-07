@@ -35,7 +35,8 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files;
     if (selected && selected.length > 0) {
-      const filesArray = Array.from(selected);
+      // Fix: Explicitly type filesArray as File[] to resolve 'unknown' type error when accessing file.name
+      const filesArray: File[] = Array.from(selected);
       const pdfFiles = filesArray.filter(file => file.name.toLowerCase().endsWith('.pdf'));
       if (pdfFiles.length < filesArray.length) {
         alert('ระบบรองรับเฉพาะไฟล์ PDF เท่านั้น');
