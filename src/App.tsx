@@ -17,7 +17,7 @@ import {
   setDoc,
   deleteDoc,
   updateDoc
-} from 'firebaseConfig';
+} from './firebaseConfig.ts';
 
 // Fallback types สำหรับกรณีที่ module resolution มีปัญหาตอน Build
 type LocalGroupName = 'นครนางรอง' | 'เมืองนางรอง' | 'โบสถ์พระยาแสงทอง' | 'สะเดาไทรงาม' | 'หนองยายพิมพ์' | 'ลุ่มลำมาศ';
