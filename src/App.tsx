@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
-import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types.ts';
+import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types';
 // @ts-ignore
-import { LuckyWheel } from './components/LuckyWheel.tsx';
+import { LuckyWheel } from './components/LuckyWheel';
 // @ts-ignore
-import { AdminPanel } from './components/AdminPanel.tsx';
+import { AdminPanel } from './components/AdminPanel';
 // @ts-ignore
 import { 
   db, 
@@ -17,9 +17,9 @@ import {
   setDoc,
   deleteDoc,
   updateDoc
-} from './firebaseConfig.ts';
+} from './firebaseConfig';
 
-// Redefine essential types locally to prevent "Implicit Any" if module resolution fails during build
+// Fallback types สำหรับกรณีที่ module resolution มีปัญหาตอน Build
 type LocalGroupName = 'นครนางรอง' | 'เมืองนางรอง' | 'โบสถ์พระยาแสงทอง' | 'สะเดาไทรงาม' | 'หนองยายพิมพ์' | 'ลุ่มลำมาศ';
 
 interface LocalStaff {
