@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { DocumentItem, DocumentType, DOCUMENT_TYPE_OPTIONS, AttachedFile } from '../types.ts';
+import { DocumentItem, DocumentType, DOCUMENT_TYPE_OPTIONS, AttachedFile } from '../types';
 
 interface DocumentManagerProps {
   documents: DocumentItem[];
@@ -35,9 +35,8 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files;
     if (selected && selected.length > 0) {
-      // Fix: Explicitly type filesArray as File[] to resolve 'unknown' type error when accessing file.name
       const filesArray: File[] = Array.from(selected);
-      const pdfFiles = filesArray.filter(file => file.name.toLowerCase().endsWith('.pdf'));
+      const pdfFiles = filesArray.filter((file: File) => file.name.toLowerCase().endsWith('.pdf'));
       if (pdfFiles.length < filesArray.length) {
         alert('ระบบรองรับเฉพาะไฟล์ PDF เท่านั้น');
       }
@@ -162,7 +161,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
             {pendingFiles.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {pendingFiles.map((file, i) => (
+                {pendingFiles.map((file: File, i: number) => (
                   <div key={i} className="bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-300 flex items-center gap-2">
                     <span className="text-[10px] font-bold text-amber-700 truncate max-w-[150px]">{file.name}</span>
                     <button type="button" onClick={() => removePendingFile(i)} className="text-amber-400 hover:text-amber-600"><i className="fas fa-times"></i></button>
@@ -189,7 +188,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {documents.map((doc) => (
+              {documents.map((doc: DocumentItem) => (
                 <tr key={doc.id} className="hover:bg-blue-50/30 transition-all group">
                   <td className="px-6 py-3 text-[11px] font-bold text-slate-400 whitespace-nowrap">
                     {new Date(doc.date).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' })}
@@ -202,7 +201,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                   <td className="px-6 py-3 text-sm font-black text-slate-900">{doc.title}</td>
                   <td className="px-6 py-3">
                     <div className="flex flex-wrap gap-1">
-                      {doc.files?.map((f, idx) => (
+                      {doc.files?.map((f: AttachedFile, idx: number) => (
                         <a key={idx} href={f.url} target="_blank" rel="noopener noreferrer" className="bg-white border border-slate-200 px-2 py-1 rounded-md text-[9px] font-bold text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1">
                           <i className="fas fa-file-pdf"></i> PDF
                         </a>

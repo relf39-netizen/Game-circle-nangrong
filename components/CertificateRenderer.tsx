@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AwardTemplate, Recipient, TextElementStyle, toThaiDigits } from '../types.ts';
+import { AwardTemplate, Recipient, TextElementStyle, toThaiDigits } from '../types';
 
 interface CertificateRendererProps {
   template: AwardTemplate;
@@ -101,7 +101,7 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
       )}
 
       {/* 4. Text Elements */}
-      {template.elements.filter(el => el.visible).map((el) => {
+      {template.elements.filter(el => el.visible).map((el: TextElementStyle) => {
         const content = getElementContent(el);
         
         // สร้างเงาหลายชั้น (3D + Shadow)
@@ -121,7 +121,6 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
           color: el.color,
           fontFamily: `'${el.fontFamily}', 'Sarabun', sans-serif`,
           textAlign: el.align,
-          // ใช้ max-content เพื่อให้ div กว้างเท่าข้อความจริง และ translateX(-50%) จะจัดกึ่งกลางได้แม่นยำแม้ล้นขอบ
           width: 'max-content', 
           transform: el.align === 'center' ? 'translateX(-50%)' : el.align === 'right' ? 'translateX(-100%)' : 'none',
           whiteSpace: 'nowrap',
@@ -131,7 +130,7 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
           fontWeight: 'bold',
           textShadow: shadowLayers.length > 0 ? shadowLayers.join(', ') : 'none',
           WebkitTextStroke: el.strokeWidth ? `${el.strokeWidth}px ${el.strokeColor || '#fff'}` : 'none',
-          // @ts-ignore - paint-order ช่วยให้ Stroke ไม่ทับ Fill
+          // @ts-ignore
           paintOrder: 'stroke fill',
         };
 

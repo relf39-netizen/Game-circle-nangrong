@@ -79,10 +79,7 @@ const App: React.FC = () => {
     setLoading(true);
     try {
       const staffSnapshot = await getDocs(collection(db, 'staff'));
-      const list = staffSnapshot.docs.map((d: any) => {
-        const data = d.data();
-        return { id: d.id, ...data } as Staff;
-      });
+      const list = staffSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Staff));
       setStaffList(list);
 
       const settingsDoc = await getDoc(doc(db, 'config', 'system'));
@@ -273,7 +270,7 @@ const App: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array.from(new Set(staffList.filter((s: Staff) => s.group === activeGroup).map((s: Staff) => s.school))).sort().map((schoolName: string) => {
+              {Array.from(new Set(staffList.filter((s: Staff) => s.group === activeGroup).map((s: Staff) => s.school))).sort().map((schoolName: any) => {
                 const schoolStaff = staffList.filter((s: Staff) => s.school === schoolName && s.group === activeGroup);
                 const hasDupInSchool = !!duplicateReport[schoolName];
                 return (
@@ -453,7 +450,7 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
         });
       }
       onSuccess();
-    } catch (e) { alert('เกิดข้อผิดพลาด'); } finally { setIsSubmitting(false); }
+    } catch (e: any) { alert('เกิดข้อผิดพลาด'); } finally { setIsSubmitting(false); }
   };
 
   return (

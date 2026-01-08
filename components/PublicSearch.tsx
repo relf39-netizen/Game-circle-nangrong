@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { AwardTemplate, Recipient, SchoolItem, DocumentItem, DocumentType, toThaiDigits } from '../types.ts';
-import { CertificateRenderer } from './CertificateRenderer.tsx';
+import { AwardTemplate, Recipient, SchoolItem, DocumentItem, DocumentType, toThaiDigits } from '../types';
+import { CertificateRenderer } from './CertificateRenderer';
 
 interface PublicSearchProps {
   templates: AwardTemplate[];

@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { AwardTemplate, TextElementStyle, DEFAULT_ELEMENTS, FONT_OPTIONS, LogoConfig } from '../types.ts';
-import { CertificateRenderer } from './CertificateRenderer.tsx';
+import { AwardTemplate, TextElementStyle, DEFAULT_ELEMENTS, FONT_OPTIONS, LogoConfig } from '../types';
+import { CertificateRenderer } from './CertificateRenderer';
 
 interface CertificateDesignerProps {
   initialTemplate?: AwardTemplate;
@@ -113,7 +113,7 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
     if (isDragging && selectedElementId && selectedElementId !== 'LOGO_ELEMENT') {
       setTemplate(prev => ({
         ...prev,
-        elements: prev.elements.map(el => el.id === selectedElementId ? { ...el, x, y } : el)
+        elements: prev.elements.map((el: TextElementStyle) => el.id === selectedElementId ? { ...el, x, y } : el)
       }));
     } else if (isLogoDragging) {
       setTemplate(prev => ({
@@ -131,7 +131,7 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
   const updateElementStyle = (id: string, updates: Partial<TextElementStyle>) => {
     setTemplate(prev => ({
       ...prev,
-      elements: prev.elements.map(el => el.id === id ? { ...el, ...updates } : el)
+      elements: prev.elements.map((el: TextElementStyle) => el.id === id ? { ...el, ...updates } : el)
     }));
   };
 
@@ -142,8 +142,8 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
     }));
   };
 
-  const selectedElement = template.elements.find(el => el.id === selectedElementId);
-  const visibleElements = template.elements.filter(el => el.visible);
+  const selectedElement = template.elements.find((el: TextElementStyle) => el.id === selectedElementId);
+  const visibleElements = template.elements.filter((el: TextElementStyle) => el.visible);
 
   return (
     <div className="flex flex-col h-full bg-gray-50/50 rounded-[2.5rem] overflow-hidden border shadow-sm" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
@@ -257,7 +257,7 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
           <section className="space-y-2">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2">4. องค์ประกอบข้อความ</h3>
             <div className="grid grid-cols-1 gap-1.5">
-              {template.elements.map(el => (
+              {template.elements.map((el: TextElementStyle) => (
                 <div key={el.id} className={`flex items-center p-2.5 rounded-xl transition-all ${selectedElementId === el.id ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-50 hover:bg-gray-100'}`}>
                   <input type="checkbox" checked={el.visible} onChange={e => updateElementStyle(el.id, { visible: e.target.checked })} className="mr-3 accent-blue-500" />
                   <span className={`flex-grow text-[10px] font-black cursor-pointer uppercase ${selectedElementId === el.id ? 'text-white' : 'text-gray-600'}`} onClick={() => el.visible && setSelectedElementId(el.id)}>
@@ -380,7 +380,7 @@ export const CertificateDesigner: React.FC<CertificateDesignerProps> = ({ initia
                     )}
 
                     {/* Draggable Text Elements */}
-                    {visibleElements.map(el => (
+                    {visibleElements.map((el: TextElementStyle) => (
                         <div
                             key={el.id}
                             onMouseDown={(e) => handleMouseDown(e, el.id)}
