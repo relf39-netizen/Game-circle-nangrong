@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Staff } from '../types.ts';
+import { Staff } from '../types';
 
 interface LuckyWheelProps {
   staff: Staff[];
@@ -62,7 +62,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
       setIsWaiting(true);
       setWinner(selected);
 
-      // ถ่วงเวลา 3 วินาทีก่อนแสดงบัตรผู้โชคดี (ตามคำขอ)
       setTimeout(() => {
         setShowWinnerCard(true);
         setIsWaiting(false);
@@ -77,7 +76,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     const sliceAngle = 360 / staff.length;
     let gradientParts = [];
     
-    // สำหรับ 1,500 คน ใช้ Step ที่กว้างขึ้นเพื่อประสิทธิภาพ
     const step = staff.length > 1200 ? 8 : staff.length > 800 ? 5 : staff.length > 400 ? 2 : 1; 
     for (let i = 0; i < staff.length; i += step) {
       const color = colors[i % colors.length];
@@ -88,7 +86,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
   };
 
   const getLabelFontSize = () => {
-    // ปรับลดขนาดลงอีกเพื่อให้รองรับคนได้หนาแน่นขึ้น
     if (staff.length > 1400) return '2.5px';
     if (staff.length > 1200) return '3px';
     if (staff.length > 900) return '4px';
@@ -101,11 +98,10 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
 
   const getWinnerFontSize = (name: string) => {
     const len = name.length;
-    // ปรับลดขนาดอย่างดุุดันเพื่อให้พอดีกับบรรทัดเดียว
     if (len > 45) return '1.2rem';
     if (len > 35) return '1.5rem';
     if (len > 25) return '2.0rem';
-    if (len > 18) return '2.4rem'; // กรณีชื่อ "กองพล..." จะได้รับขนาดนี้ซึ่งเล็กลงมาก
+    if (len > 18) return '2.4rem';
     return '3.5rem';
   };
 
@@ -140,7 +136,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
             background: generateWheelBackground()
           }}
         >
-          {/* ขยายการรองรับเป็น 1,500 รายชื่ออย่างสมบูรณ์ */}
           {staff.length <= 1500 && staff.map((s, i) => {
             const sliceAngle = 360 / staff.length;
             const rotationAngle = (i * sliceAngle) + (sliceAngle / 2) - 90;
@@ -222,7 +217,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
                  <h3 
                    className="font-black text-white tracking-tighter drop-shadow-2xl leading-none whitespace-nowrap overflow-hidden text-ellipsis mx-auto w-full block"
                    style={{ 
-                     // ปรับขนาดเล็กลงมากเป็นพิเศษเพื่อความแน่นอน
                      fontSize: getWinnerFontSize(winner.name)
                    }}
                  >

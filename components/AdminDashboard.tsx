@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { AwardTemplate, Recipient, TYPE_OPTIONS, AwardPreset, SchoolItem, DocumentItem, toThaiDigits } from '../types.ts';
-import { CertificateDesigner } from './CertificateDesigner.tsx';
-import { DocumentManager } from './DocumentManager.tsx';
-import { CertificateRenderer } from './CertificateRenderer.tsx';
-import { db, doc, setDoc, getDoc } from '../firebaseConfig.ts';
+import { AwardTemplate, Recipient, TYPE_OPTIONS, AwardPreset, SchoolItem, DocumentItem, toThaiDigits } from '../types';
+import { CertificateDesigner } from './CertificateDesigner';
+import { DocumentManager } from './DocumentManager';
+import { CertificateRenderer } from './CertificateRenderer';
+import { db, doc, setDoc, getDoc } from '../firebaseConfig';
 
-const ITEMS_PER_PAGE = 10; // จำนวนรายการต่อหน้า
+const ITEMS_PER_PAGE = 10;
 
 interface AdminDashboardProps {
   templates: AwardTemplate[];
@@ -82,7 +82,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     loadConfig();
   }, [view, selectedTemplateId]);
 
-  // Reset page when template changes
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedTemplateId]);
@@ -280,7 +279,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           return seqB - seqA;
       });
 
-      // Pagination Logic
       const totalItems = allRecipients.length;
       const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
       const paginatedRecipients = allRecipients.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -331,7 +329,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="bg-white rounded-[2rem] shadow-xl border border-slate-200 overflow-hidden flex flex-col">
                   <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex flex-col lg:flex-row gap-8">
-                        {/* Area 1: Names Input (Expanded) */}
                         <div className="lg:flex-[1.8] flex flex-col">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-3">
@@ -360,7 +357,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         customDescription: recipientForm.customDesc || undefined
                                     });
                                     setRecipientForm(prev => ({ ...prev, name: '' })); 
-                                    setCurrentPage(1); // Back to first page to see new entry
+                                    setCurrentPage(1);
                                     nameInputRef.current?.focus();
                                 }} className="flex flex-col gap-3 h-full">
                                     <input ref={nameInputRef} type="text" value={recipientForm.name} onChange={e => setRecipientForm({...recipientForm, name: e.target.value})} className="w-full border-2 border-slate-400 bg-white p-4 rounded-2xl text-xl font-bold text-slate-950 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300" placeholder="ระบุ ชื่อ-นามสกุล..." required autoFocus />
@@ -385,13 +382,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         });
                                         setBatchNames('');
                                         setInputMode('SINGLE');
-                                        setCurrentPage(1); // Back to first page
+                                        setCurrentPage(1);
                                     }} className="w-full bg-indigo-700 text-white py-4 rounded-2xl shadow-lg font-black text-sm uppercase tracking-widest border-b-4 border-indigo-950 active:translate-y-1 active:border-b-0 transition-all">เพิ่มกลุ่มรายชื่อ</button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Area 2: Settings (Fixed Side) */}
                         <div className="lg:flex-[1.2] flex flex-col gap-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                                 <div className="space-y-1">
@@ -492,7 +488,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         )}
                       </div>
 
-                      {/* Pagination Controls */}
                       {totalPages > 1 && (
                         <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">

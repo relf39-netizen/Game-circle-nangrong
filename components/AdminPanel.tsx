@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Staff, SystemSettings, SCHOOL_GROUPS } from '../types.ts';
-import { db, collection, deleteDoc, doc, setDoc } from '../firebaseConfig.ts';
+import { Staff, SystemSettings, SCHOOL_GROUPS } from '../types';
+import { db, collection, deleteDoc, doc, setDoc } from '../firebaseConfig';
 
 interface AdminPanelProps {
   staff: Staff[];
@@ -36,7 +36,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ staff, settings, onDataC
     } catch (e) { alert('บันทึกไม่สำเร็จ'); } finally { setIsUpdating(false); }
   };
 
-  // ฟังก์ชันดาวน์โหลดไฟล์
   const downloadTextFile = (content: string, filename: string) => {
     const element = document.createElement("a");
     const file = new Blob([content], { type: 'text/plain;charset=utf-8' });

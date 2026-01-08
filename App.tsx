@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types.ts';
-import { LuckyWheel } from './components/LuckyWheel.tsx';
-import { AdminPanel } from './components/AdminPanel.tsx';
+import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types';
+import { LuckyWheel } from './components/LuckyWheel';
+import { AdminPanel } from './components/AdminPanel';
 import { 
   db, 
   collection, 
@@ -13,7 +13,7 @@ import {
   setDoc,
   deleteDoc,
   updateDoc
-} from './firebaseConfig.ts';
+} from './firebaseConfig';
 
 const GROUP_COLORS: Record<GroupName, string> = {
   'นครนางรอง': 'from-blue-600 to-blue-700',
@@ -42,10 +42,9 @@ const App: React.FC = () => {
   const [authNeeded, setAuthNeeded] = useState<'NONE' | 'WHEEL' | 'ADMIN'>('NONE');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // ตรวจสอบชื่อซ้ำในแต่ละโรงเรียน
   const duplicateReport = useMemo(() => {
     const duplicates: Record<string, string[]> = {};
-    const nameMap = new Map<string, string>(); // key: name_school, value: first_id
+    const nameMap = new Map<string, string>();
     
     staffList.forEach(s => {
       const key = `${s.name.trim()}_${s.school.trim()}`;
@@ -59,7 +58,6 @@ const App: React.FC = () => {
     return duplicates;
   }, [staffList]);
 
-  // หาว่ากลุ่มไหนที่มีชื่อซ้ำ
   const groupsWithDuplicates = useMemo(() => {
     const groups = new Set<GroupName>();
     Object.keys(duplicateReport).forEach(schoolName => {
@@ -81,7 +79,7 @@ const App: React.FC = () => {
     setLoading(true);
     try {
       const staffSnapshot = await getDocs(collection(db, 'staff'));
-      const list = staffSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Staff));
+      const list = staffSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Staff));
       setStaffList(list);
 
       const settingsDoc = await getDoc(doc(db, 'config', 'system'));
@@ -219,7 +217,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {SCHOOL_GROUPS.map((group) => {
+              {SCHOOL_GROUPS.map((group: GroupName) => {
                 const groupStaff = staffList.filter(s => s.group === group);
                 const schoolCount = new Set(groupStaff.map(s => s.school)).size;
                 const hasDup = groupsWithDuplicates.has(group);
@@ -416,7 +414,6 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicates, setDuplicates] = useState<string[]>([]);
 
-  // ตรวจสอบชื่อซ้ำในขณะพิมพ์
   useEffect(() => {
     if (!formData.school || !formData.names.trim()) {
       setDuplicates([]);
@@ -425,7 +422,6 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
     const currentNames = formData.names.split('\n').map(n => n.trim()).filter(n => n !== '');
     const schoolLower = formData.school.trim().toLowerCase();
     
-    // ตรวจสอบว่าในโรงเรียนที่ระบุ มีชื่อเหล่านี้อยู่แล้วหรือไม่
     const found = currentNames.filter(name => 
       existingStaff.some(s => s.school.toLowerCase() === schoolLower && s.name.toLowerCase() === name.toLowerCase())
     );
