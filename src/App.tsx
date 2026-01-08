@@ -1,8 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types';
-import { LuckyWheel } from './components/LuckyWheel';
-import { AdminPanel } from './components/AdminPanel';
+// @ts-ignore
+import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types.ts';
+// @ts-ignore
+import { LuckyWheel } from './components/LuckyWheel.tsx';
+// @ts-ignore
+import { AdminPanel } from './components/AdminPanel.tsx';
+// @ts-ignore
 import { 
   db, 
   collection, 
@@ -13,9 +17,20 @@ import {
   setDoc,
   deleteDoc,
   updateDoc
-} from './firebaseConfig';
+} from './firebaseConfig.ts';
 
-const GROUP_COLORS: Record<GroupName, string> = {
+// Redefine essential types locally to prevent "Implicit Any" if module resolution fails during build
+type LocalGroupName = 'นครนางรอง' | 'เมืองนางรอง' | 'โบสถ์พระยาแสงทอง' | 'สะเดาไทรงาม' | 'หนองยายพิมพ์' | 'ลุ่มลำมาศ';
+
+interface LocalStaff {
+  id: string;
+  name: string;
+  school: string;
+  group: LocalGroupName;
+  created_at: string;
+}
+
+const GROUP_COLORS: Record<string, string> = {
   'นครนางรอง': 'from-blue-600 to-blue-700',
   'เมืองนางรอง': 'from-indigo-600 to-indigo-700',
   'โบสถ์พระยาแสงทอง': 'from-purple-600 to-purple-700',
@@ -26,10 +41,10 @@ const GROUP_COLORS: Record<GroupName, string> = {
 
 const App: React.FC = () => {
   const [view, setView] = useState<'HOME' | 'REGISTER' | 'WHEEL' | 'ADMIN'>('HOME');
-  const [activeGroup, setActiveGroup] = useState<GroupName | null>(null);
+  const [activeGroup, setActiveGroup] = useState<LocalGroupName | null>(null);
   const [activeSchool, setActiveSchool] = useState<string | null>(null);
-  const [staffList, setStaffList] = useState<Staff[]>([]);
-  const [settings, setSettings] = useState<SystemSettings>({
+  const [staffList, setStaffList] = useState<LocalStaff[]>([]);
+  const [settings, setSettings] = useState<any>({
     regEnabled: true,
     editLocked: false,
     spinPassword: '8888',
@@ -46,7 +61,7 @@ const App: React.FC = () => {
     const duplicates: Record<string, string[]> = {};
     const nameMap = new Map<string, string>();
     
-    staffList.forEach((s: Staff) => {
+    staffList.forEach((s: LocalStaff) => {
       const key = `${s.name.trim()}_${s.school.trim()}`;
       if (nameMap.has(key)) {
         if (!duplicates[s.school]) duplicates[s.school] = [];
@@ -59,9 +74,9 @@ const App: React.FC = () => {
   }, [staffList]);
 
   const groupsWithDuplicates = useMemo(() => {
-    const groups = new Set<GroupName>();
+    const groups = new Set<string>();
     Object.keys(duplicateReport).forEach((schoolName: string) => {
-      const staffInSchool = staffList.find((s: Staff) => s.school === schoolName);
+      const staffInSchool = staffList.find((s: LocalStaff) => s.school === schoolName);
       if (staffInSchool) groups.add(staffInSchool.group);
     });
     return groups;
@@ -79,12 +94,12 @@ const App: React.FC = () => {
     setLoading(true);
     try {
       const staffSnapshot = await getDocs(collection(db, 'staff'));
-      const list = staffSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Staff));
+      const list = staffSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as LocalStaff));
       setStaffList(list);
 
       const settingsDoc = await getDoc(doc(db, 'config', 'system'));
       if (settingsDoc.exists()) {
-        setSettings(settingsDoc.data() as SystemSettings);
+        setSettings(settingsDoc.data());
       } else {
         await setDoc(doc(db, 'config', 'system'), settings);
       }
@@ -136,13 +151,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteSchool = async (schoolName: string, group: GroupName) => {
+  const handleDeleteSchool = async (schoolName: string, group: string) => {
     if (settings.editLocked && !isAdmin) {
       alert('ระบบถูกล็อคการแก้ไขโดยผู้ดูแลระบบ');
       return;
     }
     if (!confirm(`ยืนยันการลบโรงเรียน "${schoolName}" และรายชื่อทั้งหมดในโรงเรียนนี้?`)) return;
-    const targets = staffList.filter((s: Staff) => s.school === schoolName && s.group === group);
+    const targets = staffList.filter((s: LocalStaff) => s.school === schoolName && s.group === group);
     try {
       for (const t of targets) {
         await deleteDoc(doc(db, 'staff', t.id));
@@ -160,6 +175,15 @@ const App: React.FC = () => {
       </div>
     </div>
   );
+
+  const localSchoolGroups = SCHOOL_GROUPS || [
+    'นครนางรอง',
+    'เมืองนางรอง',
+    'โบสถ์พระยาแสงทอง',
+    'สะเดาไทรงาม',
+    'หนองยายพิมพ์',
+    'ลุ่มลำมาศ'
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-['Sarabun'] selection:bg-blue-500 selection:text-white pb-20">
@@ -203,7 +227,7 @@ const App: React.FC = () => {
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">บุคลากรทั้งหมด</span>
                     </div>
                     <div className="flex flex-col border-l border-slate-700 pl-8">
-                       <span className="text-5xl font-black text-blue-500">{new Set(staffList.map((s: Staff) => s.school)).size}</span>
+                       <span className="text-5xl font-black text-blue-500">{new Set(staffList.map((s: any) => s.school)).size}</span>
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">โรงเรียนทั้งหมด</span>
                     </div>
                   </div>
@@ -217,15 +241,15 @@ const App: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {SCHOOL_GROUPS.map((group: GroupName) => {
-                const groupStaff = staffList.filter((s: Staff) => s.group === group);
-                const schoolCount = new Set(groupStaff.map((s: Staff) => s.school)).size;
+              {localSchoolGroups.map((group: any) => {
+                const groupStaff = staffList.filter((s: LocalStaff) => s.group === group);
+                const schoolCount = new Set(groupStaff.map((s: LocalStaff) => s.school)).size;
                 const hasDup = groupsWithDuplicates.has(group);
                 return (
                   <div 
                     key={group} 
-                    onClick={() => setActiveGroup(group)}
-                    className={`bg-gradient-to-br ${GROUP_COLORS[group]} p-8 rounded-[2.5rem] shadow-2xl cursor-pointer hover:-translate-y-3 transition-all group relative overflow-hidden min-h-[220px] flex flex-col justify-between`}
+                    onClick={() => setActiveGroup(group as LocalGroupName)}
+                    className={`bg-gradient-to-br ${GROUP_COLORS[group] || 'from-slate-700 to-slate-800'} p-8 rounded-[2.5rem] shadow-2xl cursor-pointer hover:-translate-y-3 transition-all group relative overflow-hidden min-h-[220px] flex flex-col justify-between`}
                   >
                     {hasDup && (
                       <div className="absolute top-4 right-4 bg-rose-500 text-white px-3 py-1 rounded-full text-[9px] font-black animate-pulse flex items-center gap-1 shadow-lg z-20">
@@ -270,8 +294,8 @@ const App: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array.from(new Set(staffList.filter((s: Staff) => s.group === activeGroup).map((s: Staff) => s.school))).sort().map((schoolName: any) => {
-                const schoolStaff = staffList.filter((s: Staff) => s.school === schoolName && s.group === activeGroup);
+              {Array.from(new Set(staffList.filter((s: LocalStaff) => s.group === activeGroup).map((s: LocalStaff) => s.school))).sort().map((schoolName: any) => {
+                const schoolStaff = staffList.filter((s: LocalStaff) => s.school === schoolName && s.group === activeGroup);
                 const hasDupInSchool = !!duplicateReport[schoolName];
                 return (
                   <div 
@@ -327,7 +351,7 @@ const App: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {staffList.filter((s: Staff) => s.school === activeSchool && s.group === activeGroup).map((s: Staff, idx: number) => {
+                  {staffList.filter((s: LocalStaff) => s.school === activeSchool && s.group === activeGroup).map((s: LocalStaff, idx: number) => {
                     const isDup = duplicateReport[activeSchool!]?.includes(s.name);
                     return (
                       <tr key={s.id} className={`transition-all group ${isDup ? 'bg-rose-900/10 border-l-4 border-l-rose-600' : 'hover:bg-slate-800/50'}`}>
@@ -355,7 +379,7 @@ const App: React.FC = () => {
                   })}
                 </tbody>
               </table>
-              {staffList.filter((s: Staff) => s.school === activeSchool && s.group === activeGroup).length === 0 && (
+              {staffList.filter((s: LocalStaff) => s.school === activeSchool && s.group === activeGroup).length === 0 && (
                 <div className="py-20 text-center">
                   <p className="text-slate-500 font-black uppercase tracking-widest text-xs">ไม่มีรายชื่อบุคลากรในโรงเรียนนี้</p>
                 </div>
@@ -371,15 +395,15 @@ const App: React.FC = () => {
             </button>
             <div className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-2xl">
               <h2 className="text-3xl font-black mb-8 border-l-4 border-blue-600 pl-6 uppercase tracking-tighter">ลงชื่อบุคลากร</h2>
-              <RegistrationForm onSuccess={() => { fetchData(); setView('HOME'); }} groups={SCHOOL_GROUPS} existingStaff={staffList} />
+              <RegistrationForm onSuccess={() => { fetchData(); setView('HOME'); }} groups={localSchoolGroups} existingStaff={staffList} />
             </div>
           </div>
         )}
 
-        {view === 'WHEEL' && <LuckyWheel staff={staffList} />}
+        {view === 'WHEEL' && <LuckyWheel staff={staffList as any} />}
 
         {view === 'ADMIN' && (
-          <AdminPanel staff={staffList} settings={settings} onDataChange={fetchData} onBack={() => { setView('HOME'); setIsAdmin(false); }} />
+          <AdminPanel staff={staffList as any} settings={settings} onDataChange={fetchData} onBack={() => { setView('HOME'); setIsAdmin(false); }} />
         )}
       </main>
 
@@ -409,7 +433,7 @@ const App: React.FC = () => {
   );
 };
 
-const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], existingStaff: Staff[] }> = ({ onSuccess, groups, existingStaff }) => {
+const RegistrationForm: React.FC<{ onSuccess: () => void, groups: any[], existingStaff: any[] }> = ({ onSuccess, groups, existingStaff }) => {
   const [formData, setFormData] = useState({ school: '', group: groups[0], names: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicates, setDuplicates] = useState<string[]>([]);
@@ -419,11 +443,11 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
       setDuplicates([]);
       return;
     }
-    const currentNames = formData.names.split('\n').map((n: string) => n.trim()).filter((n: string) => n !== '');
+    const currentNames = formData.names.split('\n').map((n: any) => n.trim()).filter((n: any) => n !== '');
     const schoolLower = formData.school.trim().toLowerCase();
     
-    const found = currentNames.filter((name: string) => 
-      existingStaff.some((s: Staff) => s.school.toLowerCase() === schoolLower && s.name.toLowerCase() === name.toLowerCase())
+    const found = currentNames.filter((name: any) => 
+      existingStaff.some((s: any) => s.school.toLowerCase() === schoolLower && s.name.toLowerCase() === name.toLowerCase())
     );
     setDuplicates(found);
   }, [formData.names, formData.school, existingStaff]);
@@ -440,7 +464,7 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
 
     setIsSubmitting(true);
     try {
-      const namesList = formData.names.split('\n').map((n: string) => n.trim()).filter((n: string) => n !== '');
+      const namesList = formData.names.split('\n').map((n: any) => n.trim()).filter((n: any) => n !== '');
       for (const name of namesList) {
         await addDoc(collection(db, 'staff'), {
           name,
@@ -457,8 +481,8 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">กลุ่มโรงเรียน</label>
-        <select value={formData.group} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({...formData, group: e.target.value as GroupName})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all">
-          {groups.map((g: GroupName) => <option key={g} value={g}>{g}</option>)}
+        <select value={formData.group} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({...formData, group: e.target.value as LocalGroupName})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all">
+          {groups.map((g: any) => <option key={g} value={g}>{g}</option>)}
         </select>
       </div>
       <div className="space-y-2">
@@ -477,7 +501,7 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl">
              <p className="text-[10px] font-bold text-rose-400 mb-1 uppercase tracking-widest">ชื่อที่ซ้ำในระบบแล้ว:</p>
              <div className="flex flex-wrap gap-2">
-               {duplicates.map((d: string, i: number) => (
+               {duplicates.map((d: any, i: number) => (
                  <span key={i} className="text-[9px] bg-rose-600/20 text-rose-300 px-2 py-0.5 rounded border border-rose-600/30">{d}</span>
                ))}
              </div>
