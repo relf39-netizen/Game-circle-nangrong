@@ -1,34 +1,62 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+
+// --- INLINE TYPES (To fix TS2307: './types') ---
+export type GroupName = 'นครนางรอง' | 'เมืองนางรอง' | 'โบสถ์พระยาแสงทอง' | 'สะเดาไทรงาม' | 'หนองยายพิมพ์' | 'ลุ่มลำมาศ';
+
+export const SCHOOL_GROUPS: GroupName[] = [
+  'นครนางรอง', 'เมืองนางรอง', 'โบสถ์พระยาแสงทอง', 'สะเดาไทรงาม', 'หนองยายพิมพ์', 'ลุ่มลำมาศ'
+];
+
+export interface Staff {
+  id: string;
+  name: string;
+  school: string;
+  group: GroupName;
+  created_at: string;
+  isWinner?: boolean;
+}
+
+export interface SystemSettings {
+  regEnabled: boolean;
+  editLocked: boolean;
+  spinPassword: string;
+  adminPassword: string;
+  adminUser: string;
+}
+
+// --- INLINE FIREBASE CONFIG (To fix TS2307: './firebaseConfig') ---
 // @ts-ignore
-import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types';
+import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+// @ts-ignore
+import { 
+  getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, setDoc, getDoc, updateDoc 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDNxYpvawwkGPuP99QZ3eTiOtBBFPjaAHQ",
+  authDomain: "onet-school-game.firebaseapp.com",
+  databaseURL: "https://onet-school-game-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "onet-school-game",
+  storageBucket: "onet-school-game.firebasestorage.app",
+  messagingSenderId: "38156225800",
+  appId: "1:38156225800:web:43dcd321390bcd630c30bd",
+  measurementId: "G-6JVL0V26ZF"
+};
+
+let db: any = null;
+try {
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  db = getFirestore(app);
+} catch (error) {
+  console.error("Firebase init failed:", error);
+}
+
+// --- COMPONENT IMPORTS ---
 // @ts-ignore
 import { LuckyWheel } from './components/LuckyWheel';
 // @ts-ignore
 import { AdminPanel } from './components/AdminPanel';
-// @ts-ignore
-import { 
-  db, 
-  collection, 
-  getDocs, 
-  addDoc, 
-  doc, 
-  getDoc,
-  setDoc,
-  deleteDoc,
-  updateDoc
-} from './firebaseConfig.ts';
-
-// Fallback types สำหรับกรณีที่ module resolution มีปัญหาตอน Build
-type LocalGroupName = 'นครนางรอง' | 'เมืองนางรอง' | 'โบสถ์พระยาแสงทอง' | 'สะเดาไทรงาม' | 'หนองยายพิมพ์' | 'ลุ่มลำมาศ';
-
-interface LocalStaff {
-  id: string;
-  name: string;
-  school: string;
-  group: LocalGroupName;
-  created_at: string;
-}
 
 const GROUP_COLORS: Record<string, string> = {
   'นครนางรอง': 'from-blue-600 to-blue-700',
@@ -41,10 +69,10 @@ const GROUP_COLORS: Record<string, string> = {
 
 const App: React.FC = () => {
   const [view, setView] = useState<'HOME' | 'REGISTER' | 'WHEEL' | 'ADMIN'>('HOME');
-  const [activeGroup, setActiveGroup] = useState<LocalGroupName | null>(null);
+  const [activeGroup, setActiveGroup] = useState<GroupName | null>(null);
   const [activeSchool, setActiveSchool] = useState<string | null>(null);
-  const [staffList, setStaffList] = useState<LocalStaff[]>([]);
-  const [settings, setSettings] = useState<any>({
+  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [settings, setSettings] = useState<SystemSettings>({
     regEnabled: true,
     editLocked: false,
     spinPassword: '8888',
@@ -60,8 +88,7 @@ const App: React.FC = () => {
   const duplicateReport = useMemo(() => {
     const duplicates: Record<string, string[]> = {};
     const nameMap = new Map<string, string>();
-    
-    staffList.forEach((s: LocalStaff) => {
+    staffList.forEach((s) => {
       const key = `${s.name.trim()}_${s.school.trim()}`;
       if (nameMap.has(key)) {
         if (!duplicates[s.school]) duplicates[s.school] = [];
@@ -74,9 +101,9 @@ const App: React.FC = () => {
   }, [staffList]);
 
   const groupsWithDuplicates = useMemo(() => {
-    const groups = new Set<string>();
-    Object.keys(duplicateReport).forEach((schoolName: string) => {
-      const staffInSchool = staffList.find((s: LocalStaff) => s.school === schoolName);
+    const groups = new Set<GroupName>();
+    Object.keys(duplicateReport).forEach((schoolName) => {
+      const staffInSchool = staffList.find((s) => s.school === schoolName);
       if (staffInSchool) groups.add(staffInSchool.group);
     });
     return groups;
@@ -94,12 +121,12 @@ const App: React.FC = () => {
     setLoading(true);
     try {
       const staffSnapshot = await getDocs(collection(db, 'staff'));
-      const list = staffSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as LocalStaff));
+      const list = staffSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Staff));
       setStaffList(list);
 
       const settingsDoc = await getDoc(doc(db, 'config', 'system'));
       if (settingsDoc.exists()) {
-        setSettings(settingsDoc.data());
+        setSettings(settingsDoc.data() as SystemSettings);
       } else {
         await setDoc(doc(db, 'config', 'system'), settings);
       }
@@ -151,13 +178,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteSchool = async (schoolName: string, group: string) => {
+  const handleDeleteSchool = async (schoolName: string, group: GroupName) => {
     if (settings.editLocked && !isAdmin) {
       alert('ระบบถูกล็อคการแก้ไขโดยผู้ดูแลระบบ');
       return;
     }
     if (!confirm(`ยืนยันการลบโรงเรียน "${schoolName}" และรายชื่อทั้งหมดในโรงเรียนนี้?`)) return;
-    const targets = staffList.filter((s: LocalStaff) => s.school === schoolName && s.group === group);
+    const targets = staffList.filter((s) => s.school === schoolName && s.group === group);
     try {
       for (const t of targets) {
         await deleteDoc(doc(db, 'staff', t.id));
@@ -176,15 +203,6 @@ const App: React.FC = () => {
     </div>
   );
 
-  const localSchoolGroups = SCHOOL_GROUPS || [
-    'นครนางรอง',
-    'เมืองนางรอง',
-    'โบสถ์พระยาแสงทอง',
-    'สะเดาไทรงาม',
-    'หนองยายพิมพ์',
-    'ลุ่มลำมาศ'
-  ];
-
   return (
     <div className="min-h-screen bg-slate-950 text-white font-['Sarabun'] selection:bg-blue-500 selection:text-white pb-20">
       {!(view === 'WHEEL' && isFullscreen) && (
@@ -200,9 +218,7 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setAuthNeeded('WHEEL')} className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20">
-                หมุนวงล้อ
-              </button>
+              <button onClick={() => setAuthNeeded('WHEEL')} className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20">หมุนวงล้อ</button>
               <button onClick={() => isAdmin ? setView('ADMIN') : setAuthNeeded('ADMIN')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ring-1 ${isAdmin ? 'bg-blue-600 ring-blue-400 shadow-lg' : 'bg-slate-800 ring-slate-700'}`}>
                 <i className="fas fa-cog text-sm"></i>
               </button>
@@ -220,62 +236,40 @@ const App: React.FC = () => {
                 <div className="text-center md:text-left">
                   <h2 className="text-4xl font-black tracking-tighter italic mb-2">ข้อมูลบุคลากรอำเภอนางรอง</h2>
                   <p className="text-blue-400 font-bold uppercase tracking-[0.3em] text-xs">สรุปข้อมูลทั้ง 6 กลุ่มโรงเรียนในสังกัด</p>
-                  
                   <div className="flex flex-wrap justify-center md:justify-start gap-8 mt-8">
                     <div className="flex flex-col">
                        <span className="text-5xl font-black text-white">{staffList.length}</span>
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">บุคลากรทั้งหมด</span>
                     </div>
                     <div className="flex flex-col border-l border-slate-700 pl-8">
-                       <span className="text-5xl font-black text-blue-500">{new Set(staffList.map((s: any) => s.school)).size}</span>
+                       <span className="text-5xl font-black text-blue-500">{new Set(staffList.map((s) => s.school)).size}</span>
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">โรงเรียนทั้งหมด</span>
                     </div>
                   </div>
                 </div>
                 {settings.regEnabled && (
-                  <button onClick={() => setView('REGISTER')} className="bg-blue-600 text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-all text-sm active:scale-95 shadow-blue-600/30">
-                    ลงชื่อร่วมกิจกรรม
-                  </button>
+                  <button onClick={() => setView('REGISTER')} className="bg-blue-600 text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-all text-sm active:scale-95 shadow-blue-600/30">ลงชื่อร่วมกิจกรรม</button>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {localSchoolGroups.map((group: any) => {
-                const groupStaff = staffList.filter((s: LocalStaff) => s.group === group);
-                const schoolCount = new Set(groupStaff.map((s: LocalStaff) => s.school)).size;
+              {SCHOOL_GROUPS.map((group) => {
+                const groupStaff = staffList.filter((s) => s.group === group);
+                const schoolCount = new Set(groupStaff.map((s) => s.school)).size;
                 const hasDup = groupsWithDuplicates.has(group);
                 return (
-                  <div 
-                    key={group} 
-                    onClick={() => setActiveGroup(group as LocalGroupName)}
-                    className={`bg-gradient-to-br ${GROUP_COLORS[group] || 'from-slate-700 to-slate-800'} p-8 rounded-[2.5rem] shadow-2xl cursor-pointer hover:-translate-y-3 transition-all group relative overflow-hidden min-h-[220px] flex flex-col justify-between`}
-                  >
-                    {hasDup && (
-                      <div className="absolute top-4 right-4 bg-rose-500 text-white px-3 py-1 rounded-full text-[9px] font-black animate-pulse flex items-center gap-1 shadow-lg z-20">
-                        <i className="fas fa-exclamation-triangle"></i> ข้อมูลซ้ำ
-                      </div>
-                    )}
-                    <div className="absolute top-6 right-6 opacity-10 group-hover:scale-125 transition-transform duration-500">
-                      <i className="fas fa-school text-7xl"></i>
-                    </div>
+                  <div key={group} onClick={() => setActiveGroup(group)} className={`bg-gradient-to-br ${GROUP_COLORS[group]} p-8 rounded-[2.5rem] shadow-2xl cursor-pointer hover:-translate-y-3 transition-all group relative overflow-hidden min-h-[220px] flex flex-col justify-between`}>
+                    {hasDup && <div className="absolute top-4 right-4 bg-rose-500 text-white px-3 py-1 rounded-full text-[9px] font-black animate-pulse flex items-center gap-1 shadow-lg z-20"><i className="fas fa-exclamation-triangle"></i> ข้อมูลซ้ำ</div>}
+                    <div className="absolute top-6 right-6 opacity-10 group-hover:scale-125 transition-transform duration-500"><i className="fas fa-school text-7xl"></i></div>
                     <div className="relative z-10">
                       <h3 className="text-2xl font-black leading-tight mb-4 border-l-4 border-white/30 pl-4">กลุ่ม{group}</h3>
                       <div className="space-y-1">
-                        <div className="flex justify-between items-center bg-black/10 px-4 py-2 rounded-xl backdrop-blur-sm">
-                          <span className="text-[10px] font-bold uppercase opacity-80">โรงเรียนในกลุ่ม</span>
-                          <span className="text-xl font-black">{schoolCount}</span>
-                        </div>
-                        <div className="flex justify-between items-center bg-black/10 px-4 py-2 rounded-xl backdrop-blur-sm">
-                          <span className="text-[10px] font-bold uppercase opacity-80">บุคลากรทั้งหมด</span>
-                          <span className="text-xl font-black">{groupStaff.length}</span>
-                        </div>
+                        <div className="flex justify-between items-center bg-black/10 px-4 py-2 rounded-xl backdrop-blur-sm"><span className="text-[10px] font-bold uppercase opacity-80">โรงเรียนในกลุ่ม</span><span className="text-xl font-black">{schoolCount}</span></div>
+                        <div className="flex justify-between items-center bg-black/10 px-4 py-2 rounded-xl backdrop-blur-sm"><span className="text-[10px] font-bold uppercase opacity-80">บุคลากรทั้งหมด</span><span className="text-xl font-black">{groupStaff.length}</span></div>
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>จัดการรายชื่อ</span>
-                      <i className="fas fa-arrow-right"></i>
-                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"><span>จัดการรายชื่อ</span><i className="fas fa-arrow-right"></i></div>
                   </div>
                 );
               })}
@@ -287,41 +281,19 @@ const App: React.FC = () => {
           <div className="animate-in slide-in-from-right-10 duration-500">
             <div className="flex items-center gap-4 mb-8">
                <button onClick={() => setActiveGroup(null)} className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-all shadow-lg"><i className="fas fa-arrow-left"></i></button>
-               <div>
-                 <h2 className="text-3xl font-black italic tracking-tighter">กลุ่ม {activeGroup}</h2>
-                 <p className="text-[10px] text-blue-400 font-black uppercase tracking-[0.2em]">เลือกโรงเรียนเพื่อจัดการบุคลากร</p>
-               </div>
+               <div><h2 className="text-3xl font-black italic tracking-tighter">กลุ่ม {activeGroup}</h2><p className="text-[10px] text-blue-400 font-black uppercase tracking-[0.2em]">เลือกโรงเรียนเพื่อจัดการบุคลากร</p></div>
             </div>
-            
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array.from(new Set(staffList.filter((s: LocalStaff) => s.group === activeGroup).map((s: LocalStaff) => s.school))).sort().map((schoolName: any) => {
-                const schoolStaff = staffList.filter((s: LocalStaff) => s.school === schoolName && s.group === activeGroup);
+              {Array.from(new Set(staffList.filter((s) => s.group === activeGroup).map((s) => s.school))).sort().map((schoolName: any) => {
+                const schoolStaff = staffList.filter((s) => s.school === schoolName && s.group === activeGroup);
                 const hasDupInSchool = !!duplicateReport[schoolName];
                 return (
-                  <div 
-                    key={schoolName}
-                    className={`bg-slate-900/50 backdrop-blur-sm border p-6 rounded-[2rem] group relative hover:bg-slate-800/50 transition-all cursor-pointer shadow-lg ${hasDupInSchool ? 'border-rose-500/50' : 'border-slate-800 hover:border-blue-500/50'}`}
-                    onClick={() => setActiveSchool(schoolName)}
-                  >
-                    {hasDupInSchool && (
-                      <div className="absolute -top-2 -right-2 bg-rose-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-lg animate-bounce z-10 border-2 border-slate-900">
-                        <i className="fas fa-exclamation"></i>
-                      </div>
-                    )}
+                  <div key={schoolName} className={`bg-slate-900/50 backdrop-blur-sm border p-6 rounded-[2rem] group relative hover:bg-slate-800/50 transition-all cursor-pointer shadow-lg ${hasDupInSchool ? 'border-rose-500/50' : 'border-slate-800 hover:border-blue-500/50'}`} onClick={() => setActiveSchool(schoolName)}>
+                    {hasDupInSchool && <div className="absolute -top-2 -right-2 bg-rose-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-lg animate-bounce z-10 border-2 border-slate-900"><i className="fas fa-exclamation"></i></div>}
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-black mb-2 group-hover:text-blue-400 transition-colors leading-tight">{schoolName}</h4>
-                        <div className="bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 inline-block">
-                          <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{schoolStaff.length} ท่าน</p>
-                        </div>
-                      </div>
+                      <div><h4 className="text-lg font-black mb-2 group-hover:text-blue-400 transition-colors leading-tight">{schoolName}</h4><div className="bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 inline-block"><p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{schoolStaff.length} ท่าน</p></div></div>
                       {(!settings.editLocked || isAdmin) && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteSchool(schoolName, activeGroup!); }}
-                          className="w-8 h-8 rounded-lg bg-rose-600/10 text-rose-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 hover:text-white"
-                        >
-                          <i className="fas fa-trash-alt text-xs"></i>
-                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteSchool(schoolName, activeGroup!); }} className="w-8 h-8 rounded-lg bg-rose-600/10 text-rose-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 hover:text-white"><i className="fas fa-trash-alt text-xs"></i></button>
                       )}
                     </div>
                   </div>
@@ -335,12 +307,8 @@ const App: React.FC = () => {
           <div className="animate-in slide-in-from-right-10 duration-500">
             <div className="flex items-center gap-4 mb-8">
                <button onClick={() => setActiveSchool(null)} className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-all shadow-lg"><i className="fas fa-arrow-left"></i></button>
-               <div>
-                 <h2 className="text-3xl font-black italic tracking-tighter">{activeSchool}</h2>
-                 <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest">สังกัดกลุ่ม {activeGroup}</p>
-               </div>
+               <div><h2 className="text-3xl font-black italic tracking-tighter">{activeSchool}</h2><p className="text-[10px] text-blue-400 font-black uppercase tracking-widest">สังกัดกลุ่ม {activeGroup}</p></div>
             </div>
-
             <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
               <table className="w-full text-left">
                 <thead className="bg-slate-950 border-b border-slate-800">
@@ -351,26 +319,17 @@ const App: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {staffList.filter((s: LocalStaff) => s.school === activeSchool && s.group === activeGroup).map((s: LocalStaff, idx: number) => {
+                  {staffList.filter((s) => s.school === activeSchool && s.group === activeGroup).map((s, idx) => {
                     const isDup = duplicateReport[activeSchool!]?.includes(s.name);
                     return (
                       <tr key={s.id} className={`transition-all group ${isDup ? 'bg-rose-900/10 border-l-4 border-l-rose-600' : 'hover:bg-slate-800/50'}`}>
-                        <td className="px-8 py-4 font-bold text-slate-600 text-xs">
-                          {isDup ? <i className="fas fa-exclamation-circle text-rose-500 mr-2"></i> : idx + 1}
-                        </td>
-                        <td className="px-8 py-4">
-                          <span className={`font-black text-lg ${isDup ? 'text-rose-400' : ''}`}>{s.name}</span>
-                          {isDup && <span className="ml-3 text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded font-black uppercase tracking-widest">รายชื่อซ้ำ</span>}
-                        </td>
+                        <td className="px-8 py-4 font-bold text-slate-600 text-xs">{isDup ? <i className="fas fa-exclamation-circle text-rose-500 mr-2"></i> : idx + 1}</td>
+                        <td className="px-8 py-4"><span className={`font-black text-lg ${isDup ? 'text-rose-400' : ''}`}>{s.name}</span>{isDup && <span className="ml-3 text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded font-black uppercase tracking-widest">รายชื่อซ้ำ</span>}</td>
                         <td className="px-8 py-4 text-right">
                           {(!settings.editLocked || isAdmin) && (
                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleEditStaff(s.id, s.name)} className="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
-                                <i className="fas fa-edit text-xs"></i>
-                              </button>
-                              <button onClick={() => handleDeleteStaff(s.id)} className="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all">
-                                <i className="fas fa-trash-alt text-xs"></i>
-                              </button>
+                              <button onClick={() => handleEditStaff(s.id, s.name)} className="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all"><i className="fas fa-edit text-xs"></i></button>
+                              <button onClick={() => handleDeleteStaff(s.id)} className="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all"><i className="fas fa-trash-alt text-xs"></i></button>
                             </div>
                           )}
                         </td>
@@ -379,53 +338,32 @@ const App: React.FC = () => {
                   })}
                 </tbody>
               </table>
-              {staffList.filter((s: LocalStaff) => s.school === activeSchool && s.group === activeGroup).length === 0 && (
-                <div className="py-20 text-center">
-                  <p className="text-slate-500 font-black uppercase tracking-widest text-xs">ไม่มีรายชื่อบุคลากรในโรงเรียนนี้</p>
-                </div>
-              )}
             </div>
           </div>
         )}
 
         {view === 'REGISTER' && (
           <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
-            <button onClick={() => setView('HOME')} className="mb-6 text-slate-400 hover:text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest transition-all">
-              <i className="fas fa-arrow-left"></i> กลับหน้าหลัก
-            </button>
+            <button onClick={() => setView('HOME')} className="mb-6 text-slate-400 hover:text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest transition-all"><i className="fas fa-arrow-left"></i> กลับหน้าหลัก</button>
             <div className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-2xl">
               <h2 className="text-3xl font-black mb-8 border-l-4 border-blue-600 pl-6 uppercase tracking-tighter">ลงชื่อบุคลากร</h2>
-              <RegistrationForm onSuccess={() => { fetchData(); setView('HOME'); }} groups={localSchoolGroups} existingStaff={staffList} />
+              <RegistrationForm onSuccess={() => { fetchData(); setView('HOME'); }} groups={SCHOOL_GROUPS} existingStaff={staffList} />
             </div>
           </div>
         )}
 
-        {view === 'WHEEL' && <LuckyWheel staff={staffList as any} />}
-
-        {view === 'ADMIN' && (
-          <AdminPanel staff={staffList as any} settings={settings} onDataChange={fetchData} onBack={() => { setView('HOME'); setIsAdmin(false); }} />
-        )}
+        {view === 'WHEEL' && <LuckyWheel staff={staffList} />}
+        {view === 'ADMIN' && <AdminPanel staff={staffList} settings={settings} onDataChange={fetchData} onBack={() => { setView('HOME'); setIsAdmin(false); }} />}
       </main>
 
       {authNeeded !== 'NONE' && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300 p-6">
           <div className="bg-slate-900 w-full max-w-sm p-10 rounded-[3rem] border border-slate-800 shadow-2xl text-center">
-            <div className="w-16 h-16 bg-blue-600/20 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-blue-500/30">
-              <i className="fas fa-lock text-2xl"></i>
-            </div>
+            <div className="w-16 h-16 bg-blue-600/20 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-blue-500/30"><i className="fas fa-lock text-2xl"></i></div>
             <h3 className="text-xl font-black mb-1 uppercase tracking-tight">เข้าสู่ระบบความปลอดภัย</h3>
             <p className="text-slate-500 text-[10px] font-bold mb-8 uppercase tracking-widest">กรุณากรอกรหัสผ่านเพื่อดำเนินการต่อ</p>
-            <input 
-              type="password" autoFocus
-              className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl text-center text-2xl font-black tracking-[0.5em] outline-none focus:border-blue-600 transition-all mb-6" 
-              placeholder="••••" value={passwordInput}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordInput(e.target.value)}
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && checkPassword()}
-            />
-            <div className="flex gap-4">
-              <button onClick={() => setAuthNeeded('NONE')} className="flex-1 py-4 text-slate-500 font-black uppercase text-[10px] tracking-widest">ยกเลิก</button>
-              <button onClick={checkPassword} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all">ยืนยัน</button>
-            </div>
+            <input type="password" autoFocus className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl text-center text-2xl font-black tracking-[0.5em] outline-none focus:border-blue-600 transition-all mb-6" placeholder="••••" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && checkPassword()} />
+            <div className="flex gap-4"><button onClick={() => setAuthNeeded('NONE')} className="flex-1 py-4 text-slate-500 font-black uppercase text-[10px] tracking-widest">ยกเลิก</button><button onClick={checkPassword} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all">ยืนยัน</button></div>
           </div>
         </div>
       )}
@@ -433,84 +371,37 @@ const App: React.FC = () => {
   );
 };
 
-const RegistrationForm: React.FC<{ onSuccess: () => void, groups: any[], existingStaff: any[] }> = ({ onSuccess, groups, existingStaff }) => {
+const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], existingStaff: Staff[] }> = ({ onSuccess, groups, existingStaff }) => {
   const [formData, setFormData] = useState({ school: '', group: groups[0], names: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicates, setDuplicates] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!formData.school || !formData.names.trim()) {
-      setDuplicates([]);
-      return;
-    }
-    const currentNames = formData.names.split('\n').map((n: any) => n.trim()).filter((n: any) => n !== '');
+    if (!formData.school || !formData.names.trim()) { setDuplicates([]); return; }
+    const currentNames = formData.names.split('\n').map((n) => n.trim()).filter((n) => n !== '');
     const schoolLower = formData.school.trim().toLowerCase();
-    
-    const found = currentNames.filter((name: any) => 
-      existingStaff.some((s: any) => s.school.toLowerCase() === schoolLower && s.name.toLowerCase() === name.toLowerCase())
-    );
+    const found = currentNames.filter((name) => existingStaff.some((s) => s.school.toLowerCase() === schoolLower && s.name.toLowerCase() === name.toLowerCase()));
     setDuplicates(found);
   }, [formData.names, formData.school, existingStaff]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.school || !formData.names.trim()) return;
-    
-    if (duplicates.length > 0) {
-      if (!confirm(`พบรายชื่อซ้ำในฐานข้อมูลของโรงเรียน ${formData.school} จำนวน ${duplicates.length} รายการ\nต้องการบันทึกต่อไปหรือไม่?`)) {
-        return;
-      }
-    }
-
+    if (duplicates.length > 0 && !confirm(`พบรายชื่อซ้ำในโรงเรียน ${formData.school} จำนวน ${duplicates.length} รายการ ต้องการบันทึกต่อไปหรือไม่?`)) return;
     setIsSubmitting(true);
     try {
-      const namesList = formData.names.split('\n').map((n: any) => n.trim()).filter((n: any) => n !== '');
-      for (const name of namesList) {
-        await addDoc(collection(db, 'staff'), {
-          name,
-          school: formData.school.trim(),
-          group: formData.group,
-          created_at: new Date().toISOString()
-        });
-      }
+      const namesList = formData.names.split('\n').map((n) => n.trim()).filter((n) => n !== '');
+      for (const name of namesList) { await addDoc(collection(db, 'staff'), { name, school: formData.school.trim(), group: formData.group, created_at: new Date().toISOString() }); }
       onSuccess();
     } catch (e: any) { alert('เกิดข้อผิดพลาด'); } finally { setIsSubmitting(false); }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">กลุ่มโรงเรียน</label>
-        <select value={formData.group} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({...formData, group: e.target.value as LocalGroupName})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all">
-          {groups.map((g: any) => <option key={g} value={g}>{g}</option>)}
-        </select>
-      </div>
-      <div className="space-y-2">
-        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ชื่อโรงเรียน</label>
-        <input type="text" required value={formData.school} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, school: e.target.value})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all" placeholder="เช่น ร.ร.บ้านนางรอง" />
-      </div>
-      <div className="space-y-2">
-        <div className="flex justify-between items-center px-1">
-          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">รายชื่อบุคลากร (แยกทีละบรรทัด)</label>
-          {duplicates.length > 0 && (
-            <span className="text-[9px] font-black text-rose-500 animate-pulse uppercase tracking-widest">พบชื่อซ้ำ {duplicates.length} รายการ</span>
-          )}
-        </div>
-        <textarea required value={formData.names} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, names: e.target.value})} className={`w-full bg-slate-950 border-2 p-4 rounded-2xl font-bold outline-none transition-all min-h-[160px] ${duplicates.length > 0 ? 'border-rose-500/50' : 'border-slate-800 focus:border-blue-600'}`} placeholder="เช่น&#10;นายสมชาย ใจดี&#10;นางสาวรักเรียน หมั่นเพียร" />
-        {duplicates.length > 0 && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-             <p className="text-[10px] font-bold text-rose-400 mb-1 uppercase tracking-widest">ชื่อที่ซ้ำในระบบแล้ว:</p>
-             <div className="flex flex-wrap gap-2">
-               {duplicates.map((d: any, i: number) => (
-                 <span key={i} className="text-[9px] bg-rose-600/20 text-rose-300 px-2 py-0.5 rounded border border-rose-600/30">{d}</span>
-               ))}
-             </div>
-          </div>
-        )}
-      </div>
-      <button type="submit" disabled={isSubmitting} className={`w-full py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl transition-all ${isSubmitting ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 text-white hover:bg-blue-500 active:scale-95 shadow-blue-600/20'}`}>
-        {isSubmitting ? 'กำลังบันทึกข้อมูล...' : 'บันทึกรายชื่อ'}
-      </button>
+      <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">กลุ่มโรงเรียน</label><select value={formData.group} onChange={(e) => setFormData({...formData, group: e.target.value as GroupName})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all">{groups.map((g) => <option key={g} value={g}>{g}</option>)}</select></div>
+      <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ชื่อโรงเรียน</label><input type="text" required value={formData.school} onChange={(e) => setFormData({...formData, school: e.target.value})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all" placeholder="เช่น ร.ร.บ้านนางรอง" /></div>
+      <div className="space-y-2"><div className="flex justify-between items-center px-1"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">รายชื่อบุคลากร (แยกบรรทัด)</label>{duplicates.length > 0 && <span className="text-[9px] font-black text-rose-500 animate-pulse uppercase tracking-widest">พบชื่อซ้ำ {duplicates.length} รายการ</span>}</div><textarea required value={formData.names} onChange={(e) => setFormData({...formData, names: e.target.value})} className={`w-full bg-slate-950 border-2 p-4 rounded-2xl font-bold outline-none transition-all min-h-[160px] ${duplicates.length > 0 ? 'border-rose-500/50' : 'border-slate-800 focus:border-blue-600'}`} placeholder="นายสมชาย ใจดี..." /></div>
+      <button type="submit" disabled={isSubmitting} className={`w-full py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl transition-all ${isSubmitting ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/20'}`}>{isSubmitting ? 'กำลังบันทึก...' : 'บันทึกรายชื่อ'}</button>
     </form>
   );
 };
