@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types.ts';
-import { LuckyWheel } from './components/LuckyWheel.tsx';
-import { AdminPanel } from './components/AdminPanel.tsx';
+import { Staff, GroupName, SCHOOL_GROUPS, SystemSettings } from './types';
+import { LuckyWheel } from './components/LuckyWheel';
+import { AdminPanel } from './components/AdminPanel';
 import { 
   db, 
   collection, 
@@ -13,7 +13,7 @@ import {
   setDoc,
   deleteDoc,
   updateDoc
-} from './firebaseConfig.ts';
+} from './firebaseConfig';
 
 const GROUP_COLORS: Record<GroupName, string> = {
   'นครนางรอง': 'from-blue-600 to-blue-700',
@@ -42,26 +42,26 @@ const App: React.FC = () => {
   const [authNeeded, setAuthNeeded] = useState<'NONE' | 'WHEEL' | 'ADMIN'>('NONE');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // ตรวจสอบชื่อซ้ำในแต่ละกลุ่มและโรงเรียน
   const duplicateReport = useMemo(() => {
     const duplicates: Record<string, string[]> = {};
-    const seen = new Set<string>();
+    const nameMap = new Map<string, string>();
     
-    staffList.forEach(s => {
+    staffList.forEach((s: Staff) => {
       const key = `${s.name.trim()}_${s.school.trim()}`;
-      if (seen.has(key)) {
+      if (nameMap.has(key)) {
         if (!duplicates[s.school]) duplicates[s.school] = [];
         if (!duplicates[s.school].includes(s.name)) duplicates[s.school].push(s.name);
+      } else {
+        nameMap.set(key, s.id);
       }
-      seen.add(key);
     });
     return duplicates;
   }, [staffList]);
 
   const groupsWithDuplicates = useMemo(() => {
     const groups = new Set<GroupName>();
-    Object.keys(duplicateReport).forEach(schoolName => {
-      const staffInSchool = staffList.find(s => s.school === schoolName);
+    Object.keys(duplicateReport).forEach((schoolName: string) => {
+      const staffInSchool = staffList.find((s: Staff) => s.school === schoolName);
       if (staffInSchool) groups.add(staffInSchool.group);
     });
     return groups;
@@ -79,7 +79,8 @@ const App: React.FC = () => {
     setLoading(true);
     try {
       const staffSnapshot = await getDocs(collection(db, 'staff'));
-      const list = staffSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Staff));
+      // ระบุประเภท any อย่างชัดเจนเพื่อแก้ TS7006
+      const list = staffSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Staff));
       setStaffList(list);
 
       const settingsDoc = await getDoc(doc(db, 'config', 'system'));
@@ -142,7 +143,7 @@ const App: React.FC = () => {
       return;
     }
     if (!confirm(`ยืนยันการลบโรงเรียน "${schoolName}" และรายชื่อทั้งหมดในโรงเรียนนี้?`)) return;
-    const targets = staffList.filter(s => s.school === schoolName && s.group === group);
+    const targets = staffList.filter((s: Staff) => s.school === schoolName && s.group === group);
     try {
       for (const t of targets) {
         await deleteDoc(doc(db, 'staff', t.id));
@@ -203,7 +204,7 @@ const App: React.FC = () => {
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">บุคลากรทั้งหมด</span>
                     </div>
                     <div className="flex flex-col border-l border-slate-700 pl-8">
-                       <span className="text-5xl font-black text-blue-500">{new Set(staffList.map(s => s.school)).size}</span>
+                       <span className="text-5xl font-black text-blue-500">{new Set(staffList.map((s: Staff) => s.school)).size}</span>
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">โรงเรียนทั้งหมด</span>
                     </div>
                   </div>
@@ -217,9 +218,9 @@ const App: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {SCHOOL_GROUPS.map((group) => {
-                const groupStaff = staffList.filter(s => s.group === group);
-                const schoolCount = new Set(groupStaff.map(s => s.school)).size;
+              {SCHOOL_GROUPS.map((group: GroupName) => {
+                const groupStaff = staffList.filter((s: Staff) => s.group === group);
+                const schoolCount = new Set(groupStaff.map((s: Staff) => s.school)).size;
                 const hasDup = groupsWithDuplicates.has(group);
                 return (
                   <div 
@@ -270,8 +271,8 @@ const App: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array.from(new Set(staffList.filter(s => s.group === activeGroup).map(s => s.school))).sort().map(schoolName => {
-                const schoolStaff = staffList.filter(s => s.school === schoolName && s.group === activeGroup);
+              {Array.from(new Set(staffList.filter((s: Staff) => s.group === activeGroup).map((s: Staff) => s.school))).sort().map((schoolName: string) => {
+                const schoolStaff = staffList.filter((s: Staff) => s.school === schoolName && s.group === activeGroup);
                 const hasDupInSchool = !!duplicateReport[schoolName];
                 return (
                   <div 
@@ -327,7 +328,7 @@ const App: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {staffList.filter(s => s.school === activeSchool && s.group === activeGroup).map((s, idx) => {
+                  {staffList.filter((s: Staff) => s.school === activeSchool && s.group === activeGroup).map((s: Staff, idx: number) => {
                     const isDup = duplicateReport[activeSchool]?.includes(s.name);
                     return (
                       <tr key={s.id} className={`transition-all group ${isDup ? 'bg-rose-900/10 border-l-4 border-l-rose-600' : 'hover:bg-slate-800/50'}`}>
@@ -355,7 +356,7 @@ const App: React.FC = () => {
                   })}
                 </tbody>
               </table>
-              {staffList.filter(s => s.school === activeSchool && s.group === activeGroup).length === 0 && (
+              {staffList.filter((s: Staff) => s.school === activeSchool && s.group === activeGroup).length === 0 && (
                 <div className="py-20 text-center">
                   <p className="text-slate-500 font-black uppercase tracking-widest text-xs">ไม่มีรายชื่อบุคลากรในโรงเรียนนี้</p>
                 </div>
@@ -385,7 +386,7 @@ const App: React.FC = () => {
 
       {authNeeded !== 'NONE' && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300 p-6">
-          <div className="bg-slate-900 w-full max-w-sm p-10 rounded-[3rem] border border-slate-800 shadow-2xl text-center">
+          <div className="bg-slate-900 w-full max-sm p-10 rounded-[3rem] border border-slate-800 shadow-2xl text-center">
             <div className="w-16 h-16 bg-blue-600/20 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-blue-500/30">
               <i className="fas fa-lock text-2xl"></i>
             </div>
@@ -395,8 +396,8 @@ const App: React.FC = () => {
               type="password" autoFocus
               className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl text-center text-2xl font-black tracking-[0.5em] outline-none focus:border-blue-600 transition-all mb-6" 
               placeholder="••••" value={passwordInput}
-              onChange={e => setPasswordInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && checkPassword()}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordInput(e.target.value)}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && checkPassword()}
             />
             <div className="flex gap-4">
               <button onClick={() => setAuthNeeded('NONE')} className="flex-1 py-4 text-slate-500 font-black uppercase text-[10px] tracking-widest">ยกเลิก</button>
@@ -414,17 +415,16 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicates, setDuplicates] = useState<string[]>([]);
 
-  // ตรวจสอบชื่อซ้ำในขณะพิมพ์
   useEffect(() => {
     if (!formData.school || !formData.names.trim()) {
       setDuplicates([]);
       return;
     }
-    const currentNames = formData.names.split('\n').map(n => n.trim()).filter(n => n !== '');
+    const currentNames = formData.names.split('\n').map((n: string) => n.trim()).filter((n: string) => n !== '');
     const schoolLower = formData.school.trim().toLowerCase();
     
-    const found = currentNames.filter(name => 
-      existingStaff.some(s => s.school.toLowerCase() === schoolLower && s.name.toLowerCase() === name.toLowerCase())
+    const found = currentNames.filter((name: string) => 
+      existingStaff.some((s: Staff) => s.school.toLowerCase() === schoolLower && s.name.toLowerCase() === name.toLowerCase())
     );
     setDuplicates(found);
   }, [formData.names, formData.school, existingStaff]);
@@ -441,7 +441,7 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
 
     setIsSubmitting(true);
     try {
-      const namesList = formData.names.split('\n').map(n => n.trim()).filter(n => n !== '');
+      const namesList = formData.names.split('\n').map((n: string) => n.trim()).filter((n: string) => n !== '');
       for (const name of namesList) {
         await addDoc(collection(db, 'staff'), {
           name,
@@ -458,13 +458,13 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">กลุ่มโรงเรียน</label>
-        <select value={formData.group} onChange={e => setFormData({...formData, group: e.target.value as GroupName})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all">
-          {groups.map(g => <option key={g} value={g}>{g}</option>)}
+        <select value={formData.group} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({...formData, group: e.target.value as GroupName})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all">
+          {groups.map((g: GroupName) => <option key={g} value={g}>{g}</option>)}
         </select>
       </div>
       <div className="space-y-2">
         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ชื่อโรงเรียน</label>
-        <input type="text" required value={formData.school} onChange={e => setFormData({...formData, school: e.target.value})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all" placeholder="เช่น ร.ร.บ้านนางรอง" />
+        <input type="text" required value={formData.school} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, school: e.target.value})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all" placeholder="เช่น ร.ร.บ้านนางรอง" />
       </div>
       <div className="space-y-2">
         <div className="flex justify-between items-center px-1">
@@ -473,12 +473,12 @@ const RegistrationForm: React.FC<{ onSuccess: () => void, groups: GroupName[], e
             <span className="text-[9px] font-black text-rose-500 animate-pulse uppercase tracking-widest">พบชื่อซ้ำ {duplicates.length} รายการ</span>
           )}
         </div>
-        <textarea required value={formData.names} onChange={e => setFormData({...formData, names: e.target.value})} className={`w-full bg-slate-950 border-2 p-4 rounded-2xl font-bold outline-none transition-all min-h-[160px] ${duplicates.length > 0 ? 'border-rose-500/50' : 'border-slate-800 focus:border-blue-600'}`} placeholder="เช่น&#10;นายสมชาย ใจดี&#10;นางสาวรักเรียน หมั่นเพียร" />
+        <textarea required value={formData.names} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, names: e.target.value})} className={`w-full bg-slate-950 border-2 p-4 rounded-2xl font-bold outline-none transition-all min-h-[160px] ${duplicates.length > 0 ? 'border-rose-500/50' : 'border-slate-800 focus:border-blue-600'}`} placeholder="เช่น&#10;นายสมชาย ใจดี&#10;นางสาวรักเรียน หมั่นเพียร" />
         {duplicates.length > 0 && (
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl">
              <p className="text-[10px] font-bold text-rose-400 mb-1 uppercase tracking-widest">ชื่อที่ซ้ำในระบบแล้ว:</p>
              <div className="flex flex-wrap gap-2">
-               {duplicates.map((d, i) => (
+               {duplicates.map((d: string, i: number) => (
                  <span key={i} className="text-[9px] bg-rose-600/20 text-rose-300 px-2 py-0.5 rounded border border-rose-600/30">{d}</span>
                ))}
              </div>

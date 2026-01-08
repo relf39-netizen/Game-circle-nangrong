@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Staff, SystemSettings, SCHOOL_GROUPS } from '../types';
+import { Staff, SystemSettings } from '../types';
 import { db, collection, deleteDoc, doc, setDoc } from '../firebaseConfig';
 
 interface AdminPanelProps {
@@ -48,7 +48,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ staff, settings, onDataC
 
   const handleExport = (type: 'NAME' | 'SCHOOL' | 'FULL') => {
     let content = "";
-    staff.forEach((s, idx) => {
+    staff.forEach((s: Staff, idx: number) => {
       if (type === 'NAME') {
         content += `${s.name}\n`;
       } else if (type === 'SCHOOL') {
@@ -89,7 +89,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ staff, settings, onDataC
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {staff.map((s) => (
+                    {staff.map((s: Staff) => (
                       <tr key={s.id} className="hover:bg-slate-800/50 transition-all group">
                         <td className="px-8 py-4 font-bold">{s.name}</td>
                         <td className="px-8 py-4 text-slate-400">{s.school}</td>
@@ -146,11 +146,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ staff, settings, onDataC
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-600 uppercase ml-1">รหัสหมุนวงล้อ</label>
-                      <input type="text" value={setForm.spinPassword} onChange={e => setSetForm({...setForm, spinPassword: e.target.value})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-xl font-bold outline-none focus:border-blue-600 transition-all" />
+                      <input type="text" value={setForm.spinPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSetForm({...setForm, spinPassword: e.target.value})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-xl font-bold outline-none focus:border-blue-600 transition-all" />
                    </div>
                    <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-600 uppercase ml-1">รหัสผู้ดูแลระบบ</label>
-                      <input type="text" value={setForm.adminPassword} onChange={e => setSetForm({...setForm, adminPassword: e.target.value})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-xl font-bold outline-none focus:border-blue-600 transition-all" />
+                      <input type="text" value={setForm.adminPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSetForm({...setForm, adminPassword: e.target.value})} className="w-full bg-slate-950 border-2 border-slate-800 p-4 rounded-xl font-bold outline-none focus:border-blue-600 transition-all" />
                    </div>
                 </div>
              </div>
