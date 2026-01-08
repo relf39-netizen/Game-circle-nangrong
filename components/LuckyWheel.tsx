@@ -62,7 +62,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
       setIsWaiting(true);
       setWinner(selected);
 
-      // ถ่วงเวลา 3 วินาทีก่อนแสดงบัตรผู้โชคดี
+      // ถ่วงเวลา 3 วินาทีก่อนแสดงบัตรผู้โชคดี (ตามคำขอ)
       setTimeout(() => {
         setShowWinnerCard(true);
         setIsWaiting(false);
@@ -77,8 +77,8 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     const sliceAngle = 360 / staff.length;
     let gradientParts = [];
     
-    // ปรับการข้ามขั้น (Step) ให้รองรับ 1,500 คนได้ลื่นไหล
-    const step = staff.length > 1000 ? 5 : staff.length > 500 ? 2 : 1; 
+    // สำหรับ 1,500 คน ใช้ Step ที่กว้างขึ้นเพื่อประสิทธิภาพ
+    const step = staff.length > 1200 ? 8 : staff.length > 800 ? 5 : staff.length > 400 ? 2 : 1; 
     for (let i = 0; i < staff.length; i += step) {
       const color = colors[i % colors.length];
       gradientParts.push(`${color} ${i * sliceAngle}deg ${(i + step) * sliceAngle}deg`);
@@ -88,23 +88,25 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
   };
 
   const getLabelFontSize = () => {
-    if (staff.length > 1200) return '3.5px';
-    if (staff.length > 800) return '4.5px';
-    if (staff.length > 500) return '5.5px';
-    if (staff.length > 300) return '7px';
-    if (staff.length > 150) return '9px';
-    if (staff.length > 80) return '11px';
+    // ปรับลดขนาดลงอีกเพื่อให้รองรับคนได้หนาแน่นขึ้น
+    if (staff.length > 1400) return '2.5px';
+    if (staff.length > 1200) return '3px';
+    if (staff.length > 900) return '4px';
+    if (staff.length > 600) return '5px';
+    if (staff.length > 300) return '6px';
+    if (staff.length > 150) return '8px';
+    if (staff.length > 80) return '10px';
     return '14px';
   };
 
   const getWinnerFontSize = (name: string) => {
     const len = name.length;
-    // ปรับขนาดเล็กลงกว่าเดิมมากเพื่อให้แสดงผลในบรรทัดเดียว
-    if (len > 40) return '1.6rem';
-    if (len > 30) return '2.0rem';
-    if (len > 22) return '2.5rem';
-    if (len > 15) return '2.8rem';
-    return '4.5rem';
+    // ปรับลดขนาดอย่างดุุดันเพื่อให้พอดีกับบรรทัดเดียว
+    if (len > 45) return '1.2rem';
+    if (len > 35) return '1.5rem';
+    if (len > 25) return '2.0rem';
+    if (len > 18) return '2.4rem'; // กรณีชื่อ "กองพล..." จะได้รับขนาดนี้ซึ่งเล็กลงมาก
+    return '3.5rem';
   };
 
   return (
@@ -132,13 +134,13 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
 
         <div 
           ref={wheelRef}
-          className="w-[580px] h-[580px] md:w-[680px] md:h-[680px] rounded-full border-[20px] border-slate-900 shadow-[0_0_120px_rgba(37,99,235,0.4)] flex items-center justify-center overflow-hidden transition-transform ease-[cubic-bezier(0.1,0,0.1,1)] duration-[10000ms] relative"
+          className="w-[580px] h-[580px] md:w-[700px] md:h-[700px] rounded-full border-[20px] border-slate-900 shadow-[0_0_120px_rgba(37,99,235,0.4)] flex items-center justify-center overflow-hidden transition-transform ease-[cubic-bezier(0.1,0,0.1,1)] duration-[10000ms] relative"
           style={{ 
             transform: `rotate(${rotation}deg)`,
             background: generateWheelBackground()
           }}
         >
-          {/* ขยายการรองรับเป็น 1,500 รายชื่อ */}
+          {/* ขยายการรองรับเป็น 1,500 รายชื่ออย่างสมบูรณ์ */}
           {staff.length <= 1500 && staff.map((s, i) => {
             const sliceAngle = 360 / staff.length;
             const rotationAngle = (i * sliceAngle) + (sliceAngle / 2) - 90;
@@ -151,11 +153,11 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
                 <div 
                   className="absolute left-1/2 flex items-center justify-end"
                   style={{ 
-                    width: isFullscreen ? '240px' : '220px', 
+                    width: isFullscreen ? '260px' : '240px', 
                     left: '50%',
                     top: '50%',
                     transformOrigin: 'left center',
-                    transform: 'translate(70px, -50%)' 
+                    transform: 'translate(60px, -50%)' 
                   }}
                 >
                   <span 
@@ -186,18 +188,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
               <span className="text-xs tracking-widest">{isSpinning ? 'สุ่ม...' : isWaiting ? 'รอ' : 'เริ่มหมุน'}</span>
             </button>
           </div>
-
-          {staff.length < 200 && (
-            <div className="absolute inset-0">
-               {staff.map((_, i) => (
-                  <div 
-                     key={i} 
-                     className="absolute top-1/2 left-1/2 w-full h-[1px] bg-white/10 origin-left -translate-y-1/2"
-                     style={{ transform: `rotate(${(i * 360) / staff.length - 90}deg)` }}
-                  />
-               ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -216,33 +206,33 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
       )}
 
       {showWinnerCard && winner && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 animate-in zoom-in-95 fade-in duration-500">
-           <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xl" onClick={() => setShowWinnerCard(false)}></div>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-10 animate-in zoom-in-95 fade-in duration-500">
+           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={() => setShowWinnerCard(false)}></div>
            
-           <div className="relative bg-white/5 backdrop-blur-3xl p-8 md:p-12 rounded-[4rem] border-2 border-white/20 shadow-[0_0_200px_rgba(37,99,235,0.4)] text-center max-w-5xl w-full flex flex-col items-center overflow-hidden">
+           <div className="relative bg-white/5 backdrop-blur-3xl p-6 md:p-12 rounded-[3rem] md:rounded-[5rem] border-2 border-white/20 shadow-[0_0_250px_rgba(37,99,235,0.4)] text-center max-w-[95vw] md:max-w-6xl w-full flex flex-col items-center overflow-hidden">
               <div className="absolute -top-32 -left-32 w-80 h-80 bg-blue-600/20 blur-[120px] rounded-full"></div>
               
-              <div className="w-20 h-20 md:w-28 md:h-28 bg-gradient-to-br from-yellow-300 to-orange-600 text-slate-950 rounded-full flex items-center justify-center mb-6 shadow-[0_0_80px_rgba(251,191,36,0.5)] animate-bounce">
-                 <i className="fas fa-trophy text-4xl md:text-6xl"></i>
+              <div className="w-16 h-16 md:w-28 md:h-28 bg-gradient-to-br from-yellow-300 to-orange-600 text-slate-950 rounded-full flex items-center justify-center mb-6 md:mb-10 shadow-[0_0_80px_rgba(251,191,36,0.6)] animate-bounce">
+                 <i className="fas fa-trophy text-3xl md:text-6xl"></i>
               </div>
               
-              <p className="text-amber-400 font-black uppercase tracking-[0.8em] text-lg md:text-xl mb-4 italic drop-shadow-lg">ขอแสดงความยินดีด้วย!</p>
+              <p className="text-amber-400 font-black uppercase tracking-[0.6em] md:tracking-[0.8em] text-sm md:text-xl mb-6 italic drop-shadow-lg">ขอแสดงความยินดีด้วย!</p>
               
-              <div className="space-y-6 md:space-y-8 mb-10 md:mb-12 w-full">
+              <div className="space-y-4 md:space-y-8 mb-8 md:mb-16 w-full px-4">
                  <h3 
-                   className="font-black text-white tracking-tighter drop-shadow-2xl leading-none whitespace-nowrap mx-auto px-10"
+                   className="font-black text-white tracking-tighter drop-shadow-2xl leading-none whitespace-nowrap overflow-hidden text-ellipsis mx-auto w-full block"
                    style={{ 
-                     // ปรับลดขนาดลงอีกตามคำขอเพื่อให้เห็นชื่อเต็มในแถวเดียว
+                     // ปรับขนาดเล็กลงมากเป็นพิเศษเพื่อความแน่นอน
                      fontSize: getWinnerFontSize(winner.name)
                    }}
                  >
                    {winner.name}
                  </h3>
-                 <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mt-4">
-                    <div className="px-8 py-3 bg-white/10 rounded-[2rem] text-lg md:text-xl font-black text-blue-300 border border-white/10 backdrop-blur-md">
+                 <div className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 mt-4">
+                    <div className="px-6 py-2.5 bg-blue-600/20 rounded-full text-sm md:text-xl font-black text-blue-300 border border-blue-500/30 backdrop-blur-md">
                       ร.ร.{winner.school}
                     </div>
-                    <div className="px-8 py-3 bg-white/10 rounded-[2rem] text-lg md:text-xl font-black text-emerald-300 border border-white/10 backdrop-blur-md">
+                    <div className="px-6 py-2.5 bg-emerald-600/20 rounded-full text-sm md:text-xl font-black text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
                       กลุ่ม{winner.group}
                     </div>
                  </div>
@@ -250,7 +240,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
 
               <button 
                 onClick={() => setShowWinnerCard(false)} 
-                className="bg-white text-slate-950 px-12 md:px-20 py-4 md:py-5 rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-blue-50 transition-all active:scale-95 text-base md:text-lg"
+                className="bg-white text-slate-950 px-12 md:px-24 py-4 md:py-6 rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-blue-50 transition-all active:scale-95 text-sm md:text-2xl"
               >
                 รับทราบ
               </button>
