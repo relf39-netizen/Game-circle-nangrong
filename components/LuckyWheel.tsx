@@ -62,10 +62,11 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
       setIsWaiting(true);
       setWinner(selected);
 
+      // ถ่วงเวลา 3 วินาทีก่อนแสดงบัตรผู้โชคดี
       setTimeout(() => {
         setShowWinnerCard(true);
         setIsWaiting(false);
-      }, 4000);
+      }, 3000);
     }, spinDuration); 
   };
 
@@ -76,13 +77,34 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     const sliceAngle = 360 / staff.length;
     let gradientParts = [];
     
-    const step = staff.length > 500 ? 4 : 1; 
+    // ปรับการข้ามขั้น (Step) ให้รองรับ 1,500 คนได้ลื่นไหล
+    const step = staff.length > 1000 ? 5 : staff.length > 500 ? 2 : 1; 
     for (let i = 0; i < staff.length; i += step) {
       const color = colors[i % colors.length];
       gradientParts.push(`${color} ${i * sliceAngle}deg ${(i + step) * sliceAngle}deg`);
     }
     
     return `conic-gradient(${gradientParts.join(', ')})`;
+  };
+
+  const getLabelFontSize = () => {
+    if (staff.length > 1200) return '3.5px';
+    if (staff.length > 800) return '4.5px';
+    if (staff.length > 500) return '5.5px';
+    if (staff.length > 300) return '7px';
+    if (staff.length > 150) return '9px';
+    if (staff.length > 80) return '11px';
+    return '14px';
+  };
+
+  const getWinnerFontSize = (name: string) => {
+    const len = name.length;
+    // ปรับขนาดเล็กลงกว่าเดิมมากเพื่อให้แสดงผลในบรรทัดเดียว
+    if (len > 40) return '1.6rem';
+    if (len > 30) return '2.0rem';
+    if (len > 22) return '2.5rem';
+    if (len > 15) return '2.8rem';
+    return '4.5rem';
   };
 
   return (
@@ -116,7 +138,8 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
             background: generateWheelBackground()
           }}
         >
-          {staff.length <= 400 && staff.map((s, i) => {
+          {/* ขยายการรองรับเป็น 1,500 รายชื่อ */}
+          {staff.length <= 1500 && staff.map((s, i) => {
             const sliceAngle = 360 / staff.length;
             const rotationAngle = (i * sliceAngle) + (sliceAngle / 2) - 90;
             return (
@@ -128,19 +151,18 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
                 <div 
                   className="absolute left-1/2 flex items-center justify-end"
                   style={{ 
-                    // ปรับความกว้างให้สั้นลงและขยับ Offset (translate) เข้ามาข้างในมากขึ้น
-                    width: isFullscreen ? '220px' : '200px', 
+                    width: isFullscreen ? '240px' : '220px', 
                     left: '50%',
                     top: '50%',
                     transformOrigin: 'left center',
-                    transform: 'translate(80px, -50%)' 
+                    transform: 'translate(70px, -50%)' 
                   }}
                 >
                   <span 
-                    className="text-white font-black whitespace-nowrap px-2 overflow-hidden text-ellipsis"
+                    className="text-white font-normal whitespace-nowrap px-1 overflow-hidden text-ellipsis"
                     style={{ 
-                      fontSize: staff.length > 200 ? '7px' : staff.length > 100 ? '9px' : '14px',
-                      textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                      fontSize: getLabelFontSize(),
+                      textShadow: '0 1px 3px rgba(0,0,0,0.8)'
                     }}
                   >
                     {s.name}
@@ -165,7 +187,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
             </button>
           </div>
 
-          {staff.length < 150 && (
+          {staff.length < 200 && (
             <div className="absolute inset-0">
                {staff.map((_, i) => (
                   <div 
@@ -197,30 +219,30 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 animate-in zoom-in-95 fade-in duration-500">
            <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xl" onClick={() => setShowWinnerCard(false)}></div>
            
-           <div className="relative bg-white/5 backdrop-blur-3xl p-10 md:p-20 rounded-[5rem] border-2 border-white/20 shadow-[0_0_200px_rgba(37,99,235,0.4)] text-center max-w-5xl w-full flex flex-col items-center overflow-hidden">
+           <div className="relative bg-white/5 backdrop-blur-3xl p-8 md:p-12 rounded-[4rem] border-2 border-white/20 shadow-[0_0_200px_rgba(37,99,235,0.4)] text-center max-w-5xl w-full flex flex-col items-center overflow-hidden">
               <div className="absolute -top-32 -left-32 w-80 h-80 bg-blue-600/20 blur-[120px] rounded-full"></div>
               
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-yellow-300 to-orange-600 text-slate-950 rounded-full flex items-center justify-center mb-10 shadow-[0_0_80px_rgba(251,191,36,0.5)] animate-bounce">
-                 <i className="fas fa-trophy text-5xl md:text-7xl"></i>
+              <div className="w-20 h-20 md:w-28 md:h-28 bg-gradient-to-br from-yellow-300 to-orange-600 text-slate-950 rounded-full flex items-center justify-center mb-6 shadow-[0_0_80px_rgba(251,191,36,0.5)] animate-bounce">
+                 <i className="fas fa-trophy text-4xl md:text-6xl"></i>
               </div>
               
-              <p className="text-amber-400 font-black uppercase tracking-[0.8em] text-xl md:text-2xl mb-8 italic drop-shadow-lg">ขอแสดงความยินดีด้วย!</p>
+              <p className="text-amber-400 font-black uppercase tracking-[0.8em] text-lg md:text-xl mb-4 italic drop-shadow-lg">ขอแสดงความยินดีด้วย!</p>
               
-              <div className="space-y-6 md:space-y-10 mb-16 md:mb-20 w-full">
+              <div className="space-y-6 md:space-y-8 mb-10 md:mb-12 w-full">
                  <h3 
-                   className="font-black text-white tracking-tighter drop-shadow-2xl leading-[1.1] break-words mx-auto max-w-4xl"
+                   className="font-black text-white tracking-tighter drop-shadow-2xl leading-none whitespace-nowrap mx-auto px-10"
                    style={{ 
-                     // ปรับขนาดตัวอักษรตามความยาวชื่อ
-                     fontSize: winner.name.length > 25 ? '3.5rem' : winner.name.length > 15 ? '5rem' : '8rem' 
+                     // ปรับลดขนาดลงอีกตามคำขอเพื่อให้เห็นชื่อเต็มในแถวเดียว
+                     fontSize: getWinnerFontSize(winner.name)
                    }}
                  >
                    {winner.name}
                  </h3>
-                 <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 mt-10">
-                    <div className="px-10 py-4 bg-white/10 rounded-[2.5rem] text-2xl md:text-4xl font-black text-blue-300 border border-white/10 backdrop-blur-md">
+                 <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mt-4">
+                    <div className="px-8 py-3 bg-white/10 rounded-[2rem] text-lg md:text-xl font-black text-blue-300 border border-white/10 backdrop-blur-md">
                       ร.ร.{winner.school}
                     </div>
-                    <div className="px-10 py-4 bg-white/10 rounded-[2.5rem] text-2xl md:text-4xl font-black text-emerald-300 border border-white/10 backdrop-blur-md">
+                    <div className="px-8 py-3 bg-white/10 rounded-[2rem] text-lg md:text-xl font-black text-emerald-300 border border-white/10 backdrop-blur-md">
                       กลุ่ม{winner.group}
                     </div>
                  </div>
@@ -228,7 +250,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
 
               <button 
                 onClick={() => setShowWinnerCard(false)} 
-                className="bg-white text-slate-950 px-16 md:px-24 py-5 md:py-6 rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-blue-50 transition-all active:scale-95 text-xl md:text-2xl"
+                className="bg-white text-slate-950 px-12 md:px-20 py-4 md:py-5 rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-blue-50 transition-all active:scale-95 text-base md:text-lg"
               >
                 รับทราบ
               </button>
