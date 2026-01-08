@@ -19,14 +19,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDNxYpvawwkGPuP99QZ3eTiOtBBFPjaAHQ",
-  authDomain: "onet-school-game.firebaseapp.com",
-  databaseURL: "https://onet-school-game-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "onet-school-game",
-  storageBucket: "onet-school-game.firebasestorage.app",
-  messagingSenderId: "38156225800",
-  appId: "1:38156225800:web:43dcd321390bcd630c30bd",
-  measurementId: "G-6JVL0V26ZF"
+  apiKey: "AIzaSyAy4v6AGRi3-40FiENali8_HEUsudB-KB8",
+  authDomain: "schoolos-1f634.firebaseapp.com",
+  databaseURL: "https://schoolos-1f634-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "schoolos-1f634",
+  storageBucket: "schoolos-1f634.firebasestorage.app",
+  messagingSenderId: "354863600444",
+  appId: "1:354863600444:web:d29821b6839bd34081c439",
+  measurementId: "G-0FKXGLFFJ4"
 };
 
 export const isConfigValid = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
