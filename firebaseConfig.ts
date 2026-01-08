@@ -1,5 +1,9 @@
 
+// เราจำเป็นต้องใช้ URL สำหรับ browser runtime แต่สำหรับ build time TSC ต้องการ module
+// ในที่นี้เราจะใช้ string literal เพื่อป้องกัน TSC ไม่ให้ดึงประเภทผิดพลาด
+// @ts-ignore
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+// @ts-ignore
 import { 
   getFirestore, 
   collection, 
@@ -32,7 +36,6 @@ let dbInstance: any = null;
 try {
   const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   dbInstance = getFirestore(app);
-  console.log("Firebase initialized");
 } catch (error) {
   console.error("Firebase initialization failed:", error);
 }

@@ -74,7 +74,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     if (staff.length === 1) return `conic-gradient(${colors[0]} 0deg 360deg)`;
 
     const sliceAngle = 360 / staff.length;
-    let gradientParts = [];
+    let gradientParts: string[] = [];
     
     const step = staff.length > 1200 ? 8 : staff.length > 800 ? 5 : staff.length > 400 ? 2 : 1; 
     for (let i = 0; i < staff.length; i += step) {
@@ -136,7 +136,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
             background: generateWheelBackground()
           }}
         >
-          {staff.length <= 1500 && staff.map((s, i) => {
+          {staff.length <= 1500 && staff.map((s: Staff, i: number) => {
             const sliceAngle = 360 / staff.length;
             const rotationAngle = (i * sliceAngle) + (sliceAngle / 2) - 90;
             return (

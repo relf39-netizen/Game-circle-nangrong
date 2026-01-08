@@ -79,8 +79,10 @@ const App: React.FC = () => {
     setLoading(true);
     try {
       const staffSnapshot = await getDocs(collection(db, 'staff'));
-      // ระบุประเภท any อย่างชัดเจนเพื่อแก้ TS7006
-      const list = staffSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Staff));
+      const list = staffSnapshot.docs.map((d: any) => {
+        const data = d.data();
+        return { id: d.id, ...data } as Staff;
+      });
       setStaffList(list);
 
       const settingsDoc = await getDoc(doc(db, 'config', 'system'));
@@ -294,7 +296,7 @@ const App: React.FC = () => {
                       </div>
                       {(!settings.editLocked || isAdmin) && (
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteSchool(schoolName, activeGroup); }}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteSchool(schoolName, activeGroup!); }}
                           className="w-8 h-8 rounded-lg bg-rose-600/10 text-rose-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 hover:text-white"
                         >
                           <i className="fas fa-trash-alt text-xs"></i>
@@ -329,7 +331,7 @@ const App: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-800">
                   {staffList.filter((s: Staff) => s.school === activeSchool && s.group === activeGroup).map((s: Staff, idx: number) => {
-                    const isDup = duplicateReport[activeSchool]?.includes(s.name);
+                    const isDup = duplicateReport[activeSchool!]?.includes(s.name);
                     return (
                       <tr key={s.id} className={`transition-all group ${isDup ? 'bg-rose-900/10 border-l-4 border-l-rose-600' : 'hover:bg-slate-800/50'}`}>
                         <td className="px-8 py-4 font-bold text-slate-600 text-xs">
@@ -386,7 +388,7 @@ const App: React.FC = () => {
 
       {authNeeded !== 'NONE' && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300 p-6">
-          <div className="bg-slate-900 w-full max-sm p-10 rounded-[3rem] border border-slate-800 shadow-2xl text-center">
+          <div className="bg-slate-900 w-full max-w-sm p-10 rounded-[3rem] border border-slate-800 shadow-2xl text-center">
             <div className="w-16 h-16 bg-blue-600/20 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-blue-500/30">
               <i className="fas fa-lock text-2xl"></i>
             </div>
