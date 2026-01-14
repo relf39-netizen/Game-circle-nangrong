@@ -79,14 +79,24 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
       setIsWaiting(true);
       setWinner(selected);
       
-      setWinnerHistory(prev => [selected, ...prev]);
+      // We don't update history here anymore. 
+      // We wait for the user to close the card.
       setPool(prev => prev.filter(c => c.id !== selected.id));
 
       setTimeout(() => {
         setShowWinnerCard(true);
         setIsWaiting(false);
-      }, 3000);
+      }, 2000); 
     }, spinDuration); 
+  };
+
+  const closeWinnerCard = () => {
+    if (winner) {
+      // Add winner to history only when closing the announcement
+      setWinnerHistory(prev => [winner, ...prev]);
+    }
+    setShowWinnerCard(false);
+    setWinner(null);
   };
 
   const clearHistory = () => {
@@ -299,10 +309,10 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
         </div>
       )}
 
-      {/* Winner Card Overlay - HEIGHT ADJUSTED (Made more compact) */}
+      {/* Winner Card Overlay - HEIGHT ADJUSTED (Compact) */}
       {showWinnerCard && winner && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 animate-in zoom-in-95 fade-in duration-500">
-           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={() => setShowWinnerCard(false)}></div>
+           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={closeWinnerCard}></div>
            
            <div className="relative bg-white/5 backdrop-blur-3xl p-6 md:p-8 rounded-[2rem] md:rounded-[4rem] border-2 border-white/20 shadow-[0_0_200px_rgba(37,99,235,0.3)] text-center max-w-[95vw] md:max-w-5xl w-full flex flex-col items-center overflow-hidden min-h-[400px] justify-center">
               <div className="absolute -top-32 -left-32 w-80 h-80 bg-blue-600/20 blur-[120px] rounded-full"></div>
@@ -323,7 +333,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
                    {winner.name}
                  </h3>
                  
-                 {/* Spacing reduced */}
                  <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 mt-12 md:mt-20">
                     <div className="px-10 py-3 bg-blue-600/20 rounded-full text-lg md:text-2xl font-black text-blue-300 border border-blue-500/30 backdrop-blur-md shadow-xl">
                       ร.ร.{winner.school}
@@ -336,7 +345,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
 
               {/* Smaller and sleeker Acknowledge button */}
               <button 
-                onClick={() => setShowWinnerCard(false)} 
+                onClick={closeWinnerCard} 
                 className="bg-white text-slate-950 px-5 md:px-10 py-2 md:py-3 rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-blue-50 transition-all active:scale-95 text-[8px] md:text-xs mt-16 border-b-2 border-slate-300"
               >
                 รับทราบ
