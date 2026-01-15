@@ -12,12 +12,13 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
   const [winner, setWinner] = useState<Staff | null>(null);
   const [winnerHistory, setWinnerHistory] = useState<Staff[]>([]);
   
-  const [pool, setPool] = useState<Staff[]>(staff);
-  const [visualCandidates, setVisualCandidates] = useState<Staff[]>(staff);
+  const [pool, setPool] = useState<Staff[]>([]);
+  const [visualCandidates, setVisualCandidates] = useState<Staff[]>([]);
   
   const [showWinnerCard, setShowWinnerCard] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
+  const [sessionRestored, setSessionRestored] = useState(false);
   const wheelRef = useRef<HTMLDivElement>(null);
 
   const colors = [
@@ -25,12 +26,39 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     '#0ea5e9', '#6366f1', '#a855f7', '#10b981', '#f59e0b', '#f43f5e'
   ];
 
+  // Initialize and load saved session
   useEffect(() => {
-    if (staff.length > 0 && pool.length === 0 && winnerHistory.length === 0) {
-      setPool(staff);
-      setVisualCandidates(staff);
+    const savedPool = localStorage.getItem('mnr_lucky_pool');
+    const savedHistory = localStorage.getItem('mnr_lucky_history');
+
+    if (savedPool && savedHistory) {
+      const parsedPool = JSON.parse(savedPool);
+      const parsedHistory = JSON.parse(savedHistory);
+      
+      // Ensure the saved session is relevant to the current staff list (basic check)
+      if (parsedPool.length + parsedHistory.length === staff.length) {
+        setPool(parsedPool);
+        setVisualCandidates(parsedPool);
+        setWinnerHistory(parsedHistory);
+        setSessionRestored(true);
+        setTimeout(() => setSessionRestored(false), 5000);
+        return;
+      }
     }
+
+    // Default: Start new session
+    setPool(staff);
+    setVisualCandidates(staff);
+    setWinnerHistory([]);
   }, [staff]);
+
+  // Save progress to LocalStorage whenever it changes
+  useEffect(() => {
+    if (pool.length > 0 || winnerHistory.length > 0) {
+      localStorage.setItem('mnr_lucky_pool', JSON.stringify(pool));
+      localStorage.setItem('mnr_lucky_history', JSON.stringify(winnerHistory));
+    }
+  }, [pool, winnerHistory]);
 
   useEffect(() => {
     const handleFsChange = () => {
@@ -72,7 +100,10 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
       setIsSpinning(false);
       setIsWaiting(true);
       setWinner(selected);
-      setPool(prev => prev.filter(c => c.id !== selected.id));
+      
+      // Important: Winner is removed from pool here
+      const nextPool = pool.filter(c => c.id !== selected.id);
+      setPool(nextPool);
 
       setTimeout(() => {
         setShowWinnerCard(true);
@@ -90,12 +121,14 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
   };
 
   const clearHistory = () => {
-    if (confirm('ยืนยันการเริ่มเกมใหม่ ล้างประวัติ และนำรายชื่อทั้งหมดกลับมาในวงล้อ?')) {
+    if (confirm('ยืนยันการเริ่มเกมใหม่ ล้างประวัติทั้งหมด และนำรายชื่อกลับมาเริ่มต้นใหม่?')) {
       setWinnerHistory([]);
       setPool(staff);
       setVisualCandidates(staff);
       setWinner(null);
       setShowWinnerCard(false);
+      localStorage.removeItem('mnr_lucky_pool');
+      localStorage.removeItem('mnr_lucky_history');
     }
   };
 
@@ -107,17 +140,14 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     const sliceAngle = 360 / count;
     let gradientParts: string[] = [];
     
-    // Max visual segments for gradient rendering to maintain performance
     const maxVisualSegments = 500; 
     const step = Math.max(1, Math.ceil(count / maxVisualSegments));
     
     for (let i = 0; i < count; i += step) {
       const colorIndex = Math.floor(i / step) % colors.length;
       const baseColor = colors[colorIndex];
-      
       const startAngle = i * sliceAngle;
       const endAngle = Math.min((i + step) * sliceAngle, 360);
-      
       gradientParts.push(`${baseColor} ${startAngle.toFixed(2)}deg ${(endAngle - 0.05).toFixed(2)}deg`);
       gradientParts.push(`rgba(0,0,0,0.1) ${(endAngle - 0.05).toFixed(2)}deg ${endAngle.toFixed(2)}deg`);
     }
@@ -149,6 +179,12 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
   return (
     <div className={`relative flex flex-col lg:flex-row items-center justify-center transition-all duration-700 ${isFullscreen ? 'fixed inset-0 z-[100] bg-slate-950 p-0 m-0 overflow-hidden h-screen w-screen' : 'min-h-[850px] py-16'}`}>
       
+      {sessionRestored && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest animate-bounce z-[150] shadow-2xl border border-blue-400">
+           <i className="fas fa-history mr-2"></i> กู้คืนความคืบหน้าจากการเล่นครั้งก่อนแล้ว
+        </div>
+      )}
+
       {!isFullscreen && (
         <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none overflow-hidden">
           <div className="w-[1200px] h-[1200px] border-[100px] border-blue-500 rounded-full animate-spin-slow"></div>
@@ -179,7 +215,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
         >
           <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, transparent 30%, black 100%)' }}></div>
 
-          {/* Render labels up to 1500 names to create the dense text effect shown in the image */}
           {visualCandidates.length <= 1500 && visualCandidates.map((s: Staff, i: number) => {
             const sliceAngle = 360 / visualCandidates.length;
             const rotationAngle = (i * sliceAngle) + (sliceAngle / 2) - 90;
@@ -203,7 +238,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
                     className="text-white font-normal whitespace-nowrap overflow-hidden text-ellipsis"
                     style={{ 
                       fontSize: getLabelFontSize(),
-                      // Removed shadow for high-count performance and cleaner "ring" look
                       paddingRight: visualCandidates.length > 500 ? '1px' : '4px'
                     }}
                   >
@@ -253,7 +287,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
                <div className="bg-slate-900/40 px-6 py-3 rounded-2xl border border-slate-800 inline-block shadow-lg">
                  <p className="text-slate-500 font-black uppercase tracking-widest text-[10px]">รายชื่อในวงล้อเหลือ: {pool.length} ท่าน (จาก {staff.length})</p>
                  {visualCandidates.length > 500 && (
-                   <p className="text-blue-400/50 text-[8px] font-black uppercase mt-1 tracking-widest">โหมดพื้นผิวรายชื่อ (High-Density Texture)</p>
+                   <p className="text-blue-400/50 text-[8px] font-black uppercase mt-1 tracking-widest">โหมดพื้นผิวรายชื่อ (ประมวลผล {visualCandidates.length} รายการ)</p>
                  )}
                </div>
              )}
