@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Staff } from '../types';
 
 interface LuckyWheelProps {
@@ -12,9 +12,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
   const [winner, setWinner] = useState<Staff | null>(null);
   const [winnerHistory, setWinnerHistory] = useState<Staff[]>([]);
   
-  // 'pool' tracks who hasn't won yet
   const [pool, setPool] = useState<Staff[]>(staff);
-  // 'visualCandidates' is what is actually rendered on the wheel to prevent "jumping" after a win
   const [visualCandidates, setVisualCandidates] = useState<Staff[]>(staff);
   
   const [showWinnerCard, setShowWinnerCard] = useState(false);
@@ -27,7 +25,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     '#0ea5e9', '#6366f1', '#a855f7', '#10b981', '#f59e0b', '#f43f5e'
   ];
 
-  // Initialize pool if staff changes (e.g. data loaded)
   useEffect(() => {
     if (staff.length > 0 && pool.length === 0 && winnerHistory.length === 0) {
       setPool(staff);
@@ -54,7 +51,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
   const spin = () => {
     if (isSpinning || isWaiting || pool.length === 0) return;
 
-    // IMPORTANT: Sync visual wheel with current pool only when starting a NEW spin
     setVisualCandidates(pool);
     
     const randomIndex = Math.floor(Math.random() * pool.length);
@@ -72,27 +68,21 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     setWinner(null);
     setShowWinnerCard(false);
 
-    const spinDuration = 10000;
-
     setTimeout(() => {
       setIsSpinning(false);
       setIsWaiting(true);
       setWinner(selected);
-      
-      // We don't update history here anymore. 
-      // We wait for the user to close the card.
       setPool(prev => prev.filter(c => c.id !== selected.id));
 
       setTimeout(() => {
         setShowWinnerCard(true);
         setIsWaiting(false);
       }, 2000); 
-    }, spinDuration); 
+    }, 10000); 
   };
 
   const closeWinnerCard = () => {
     if (winner) {
-      // Add winner to history only when closing the announcement
       setWinnerHistory(prev => [winner, ...prev]);
     }
     setShowWinnerCard(false);
@@ -109,30 +99,41 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
     }
   };
 
-  const generateWheelBackground = () => {
-    if (visualCandidates.length === 0) return 'slate-900';
-    if (visualCandidates.length === 1) return `conic-gradient(${colors[0]} 0deg 360deg)`;
+  const wheelBackground = useMemo(() => {
+    const count = visualCandidates.length;
+    if (count === 0) return 'rgb(15, 23, 42)';
+    if (count === 1) return `conic-gradient(${colors[0]} 0deg 360deg)`;
 
-    const sliceAngle = 360 / visualCandidates.length;
+    const sliceAngle = 360 / count;
     let gradientParts: string[] = [];
     
-    const step = visualCandidates.length > 1200 ? 8 : visualCandidates.length > 800 ? 5 : visualCandidates.length > 400 ? 2 : 1; 
-    for (let i = 0; i < visualCandidates.length; i += step) {
-      const color = colors[i % colors.length];
-      gradientParts.push(`${color} ${i * sliceAngle}deg ${(i + step) * sliceAngle}deg`);
+    // Max visual segments for gradient rendering to maintain performance
+    const maxVisualSegments = 500; 
+    const step = Math.max(1, Math.ceil(count / maxVisualSegments));
+    
+    for (let i = 0; i < count; i += step) {
+      const colorIndex = Math.floor(i / step) % colors.length;
+      const baseColor = colors[colorIndex];
+      
+      const startAngle = i * sliceAngle;
+      const endAngle = Math.min((i + step) * sliceAngle, 360);
+      
+      gradientParts.push(`${baseColor} ${startAngle.toFixed(2)}deg ${(endAngle - 0.05).toFixed(2)}deg`);
+      gradientParts.push(`rgba(0,0,0,0.1) ${(endAngle - 0.05).toFixed(2)}deg ${endAngle.toFixed(2)}deg`);
     }
     
     return `conic-gradient(${gradientParts.join(', ')})`;
-  };
+  }, [visualCandidates.length]);
 
   const getLabelFontSize = () => {
-    if (visualCandidates.length > 1400) return '2.5px';
-    if (visualCandidates.length > 1200) return '3px';
-    if (visualCandidates.length > 900) return '4px';
-    if (visualCandidates.length > 600) return '5px';
-    if (visualCandidates.length > 300) return '6px';
-    if (visualCandidates.length > 150) return '8px';
-    if (visualCandidates.length > 80) return '10px';
+    const count = visualCandidates.length;
+    if (count > 1200) return '2px';
+    if (count > 900) return '3px';
+    if (count > 600) return '4px';
+    if (count > 400) return '5px';
+    if (count > 250) return '6px';
+    if (count > 150) return '8px';
+    if (count > 80) return '10px';
     return '14px';
   };
 
@@ -154,7 +155,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
         </div>
       )}
 
-      {/* Main Wheel Section */}
       <div className={`flex-1 relative flex flex-col items-center justify-center transition-transform duration-700 ${isFullscreen ? 'scale-100' : 'scale-95 md:scale-100'}`}>
         
         <button 
@@ -164,7 +164,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
           <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
         </button>
 
-        {/* Pointer at the TOP */}
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(0,0,0,0.6)] z-40 ring-4 ring-blue-600">
            <div className="w-0 h-0 border-l-[22px] border-l-transparent border-r-[22px] border-r-transparent border-t-[40px] border-t-blue-600 absolute -bottom-9"></div>
            <i className="fas fa-star text-blue-600 text-3xl animate-pulse"></i>
@@ -175,9 +174,12 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
           className="w-[500px] h-[500px] md:w-[650px] md:h-[650px] rounded-full border-[20px] border-slate-900 shadow-[0_0_120px_rgba(37,99,235,0.4)] flex items-center justify-center overflow-hidden transition-transform ease-[cubic-bezier(0.1,0,0.1,1)] duration-[10000ms] relative"
           style={{ 
             transform: `rotate(${rotation}deg)`,
-            background: generateWheelBackground()
+            background: wheelBackground
           }}
         >
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, transparent 30%, black 100%)' }}></div>
+
+          {/* Render labels up to 1500 names to create the dense text effect shown in the image */}
           {visualCandidates.length <= 1500 && visualCandidates.map((s: Staff, i: number) => {
             const sliceAngle = 360 / visualCandidates.length;
             const rotationAngle = (i * sliceAngle) + (sliceAngle / 2) - 90;
@@ -190,18 +192,19 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
                 <div 
                   className="absolute left-1/2 flex items-center justify-end"
                   style={{ 
-                    width: isFullscreen ? '240px' : '220px', 
+                    width: isFullscreen ? '250px' : '230px', 
                     left: '50%',
                     top: '50%',
                     transformOrigin: 'left center',
-                    transform: 'translate(60px, -50%)' 
+                    transform: 'translate(55px, -50%)' 
                   }}
                 >
                   <span 
-                    className="text-white font-normal whitespace-nowrap px-1 overflow-hidden text-ellipsis"
+                    className="text-white font-normal whitespace-nowrap overflow-hidden text-ellipsis"
                     style={{ 
                       fontSize: getLabelFontSize(),
-                      textShadow: '0 1px 3px rgba(0,0,0,0.8)'
+                      // Removed shadow for high-count performance and cleaner "ring" look
+                      paddingRight: visualCandidates.length > 500 ? '1px' : '4px'
                     }}
                   >
                     {s.name}
@@ -227,7 +230,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
           </div>
         </div>
 
-        {/* Fullscreen Winners Names-Only List (Right Side) */}
         {isFullscreen && winnerHistory.length > 0 && (
           <div className="fixed top-0 bottom-0 right-0 w-48 md:w-64 bg-slate-950/40 backdrop-blur-md p-6 z-50 animate-in slide-in-from-right-10 duration-700 overflow-y-auto custom-scrollbar border-l border-white/5">
             <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-6 border-b border-blue-500/20 pb-2">ผู้โชคดี ({winnerHistory.length})</h4>
@@ -250,13 +252,15 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
              ) : (
                <div className="bg-slate-900/40 px-6 py-3 rounded-2xl border border-slate-800 inline-block shadow-lg">
                  <p className="text-slate-500 font-black uppercase tracking-widest text-[10px]">รายชื่อในวงล้อเหลือ: {pool.length} ท่าน (จาก {staff.length})</p>
+                 {visualCandidates.length > 500 && (
+                   <p className="text-blue-400/50 text-[8px] font-black uppercase mt-1 tracking-widest">โหมดพื้นผิวรายชื่อ (High-Density Texture)</p>
+                 )}
                </div>
              )}
           </div>
         )}
       </div>
 
-      {/* Sidebar (Only non-fullscreen) */}
       {!isFullscreen && (
         <div className="w-full lg:w-80 h-full max-h-[600px] lg:max-h-full flex flex-col transition-all duration-500 opacity-100">
           <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-[2.5rem] flex flex-col h-full shadow-2xl overflow-hidden mx-4">
@@ -309,7 +313,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
         </div>
       )}
 
-      {/* Winner Card Overlay - HEIGHT ADJUSTED (Compact) */}
       {showWinnerCard && winner && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 animate-in zoom-in-95 fade-in duration-500">
            <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={closeWinnerCard}></div>
@@ -343,7 +346,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ staff }) => {
                  </div>
               </div>
 
-              {/* Smaller and sleeker Acknowledge button */}
               <button 
                 onClick={closeWinnerCard} 
                 className="bg-white text-slate-950 px-5 md:px-10 py-2 md:py-3 rounded-full font-black uppercase tracking-widest shadow-2xl hover:bg-blue-50 transition-all active:scale-95 text-[8px] md:text-xs mt-16 border-b-2 border-slate-300"
